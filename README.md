@@ -16,19 +16,24 @@ The core thesis: your phone's home screen should be a **tool**, not a dopamine d
 ## Features
 
 ### Executive Function Scaffolding
+- **Omnibar Universal Engine** — inline math evaluator, instant task capture (`+ buy milk`), AI Goblin decomposition (`? clean garage`), and instant app launcher in a unified terminal input
 - **Daily Anchor** — one pinned "focus of the day" field. One goal, persisted across reboots
 - **QuestBoard** — max 3 concurrent tasks with AI-powered decomposition (Groq / OpenRouter / Gemini, BYOK)
+- **Time-Blindness Day Progress Ruler** — visual quantized ruler tracking the waking day ($06:00 - 22:00$) with elapsed percentage
 - **Flowmodoro Timer** — count-up focus sessions with intuitive break scaffolding
 - **Working Memory Scratchpad** — swipe-down persistent notepad, never lost between app switches
 
-### Impulse Friction System
+### Impulse Friction & Interception
+- **Notification Air-Gap (Quarantine)** — intercepts status bar notifications and dopamine badges into a calm, batched on-demand digest
 - **Mindful Delay Gate** — configurable 5/15/30/60s breathing pause before designated distraction apps
 - **Intention Capture** — optional "I'm opening this to..." text box before launching social media
 - **App Hiding** — remove apps from the drawer without uninstalling (long-press → hide)
 - **Per-app Friction Level** — set delay per app independently
 
-### Sensory Regulation
-- **Ambient Soundscape** — Brown / Pink / White noise generated on-device via AudioTrack, zero network
+### Sensory Regulation & Auditory Neuromodulation
+- **Stereo Binaural Focus Beats** — real-time mathematical sinusoidal DSP generating 40Hz Gamma (hyperfocus) and 14Hz Beta (active problem solving) over calibrated pink noise
+- **Procedural Soundscapes** — Brown, Pink, White noise, and a real-time stochastic Rain acoustic wash generated directly on-device via AudioTrack (zero audio assets, zero network)
+- **Sensory Blackout Mode** — instant single-tap emergency sensory isolation: screen dimmed to hardware minimum ($0.01$), audio muted, pure void overlay with triple-tap exit
 - **Low-Spoon Mode** — reduces visual density and cognitive demands during executive fatigue
 - **Circadian Tinting** — warm amber overlay after 8pm, pure black at midnight
 - **AMOLED Pure Black** — true zero-pixel power draw on OLED/AMOLED panels
@@ -39,15 +44,16 @@ The core thesis: your phone's home screen should be a **tool**, not a dopamine d
 - **Active Task Count** — live badge on homescreen showing pending quest count
 
 ### Wallpapers
+- **Matrix Digital Rain Engine** — high-performance real-time falling code glyphs (Matrix Emerald & Cyberpunk Amber)
+- **Procedural AMOLED Geometric Generator** — on-device geometry-based dark wallpapers, zero network required
 - **Custom Photo Import** — pick any image from storage, apply to Home/Lock/Both
 - **Wallhaven API** — minimal dark wallpaper catalog (BYOK)
-- **Procedural AMOLED Generator** — on-device geometry-based dark wallpapers, no network required
 
 ### Privacy
 - **Zero telemetry** — no analytics, no crash reporting, no network calls without explicit user action
 - **BYOK AI** — bring your own API key; keys stored in Android Keystore (hardware-backed encryption)
-- **No icon loading** — launcher indexes app metadata only, no bitmap decoding
-- **On-device everything** — UsageStats, calendar, tasks all local-only
+- **Zero asset bloat** — no heavy bitmaps or audio files; soundscapes and wallpapers are synthesized mathematically in code
+- **On-device everything** — UsageStats, calendar, tasks, notifications all local-only
 
 ---
 
@@ -59,25 +65,31 @@ app/
 │   ├── local/          # Room database (tasks, scratchpad)
 │   ├── model/          # AppInfo with pre-normalized searchIndex
 │   └── repository/     # AppRepository, TaskRepository, WallpaperRepository,
-│                       # DailyAnchorRepository, HiddenAppsRepository, FrictionRepository
+│                       # QuarantineRepository, DailyAnchorRepository, HiddenAppsRepository
 ├── domain/
-│   ├── audio/          # SoundScapeEngine — AudioTrack noise generation
+│   ├── audio/          # SoundScapeEngine — AudioTrack DSP (Binaural Beats, Rain, Noise)
 │   ├── calendar/       # CalendarGlanceProvider
 │   ├── decomposer/     # TaskDecomposerEngine — multi-provider AI task decomposition
+│   ├── eval/           # SimpleMathEvaluator — recursive-descent math parser
 │   ├── screentime/     # ScreenTimeTintController — circadian tinting
+│   ├── service/        # NotificationQuarantineService — NotificationListenerService
 │   ├── typography/     # FixationPointParser — bionic reading with LRU cache
 │   └── usagestats/     # LastOpenedProvider — UsageStatsManager wrapper
 └── presentation/
+    ├── blackout/       # BlackoutOverlay — emergency sensory isolation
+    ├── dayprogress/    # DayProgressRuler — visual time-blindness counter
     ├── desk/           # DeskWidget — Flowmodoro timer + DeskModeDreamService
     ├── drawer/         # AppDrawer — text-only, long-press context menu
     ├── friction/       # MindfulDelayActivity — configurable breathing gate
     ├── home/           # DailyAnchorWidget, CalendarGlanceCard, LastOpenedBar
+    ├── notification/   # QuarantineDigestCard — batched notification review
+    ├── omnibar/        # OmnibarWidget — universal command & math terminal
     ├── onboarding/     # OnboardingScreen — interactive first-launch walkthrough
     ├── quest/          # QuestBoard — task management with AI decomposition
     ├── scratchpad/     # ScratchpadDialog — working memory notepad
     ├── settings/       # SettingsSheet — BYOK key management, profile config
     ├── theme/          # AHaTheme — pure black AMOLED palette, monospace tokens
-    └── wallpaper/      # WallpaperPickerSheet — custom + Wallhaven + procedural
+    └── wallpaper/      # WallpaperPickerSheet — Matrix Rain + Procedural + Wallhaven
 ```
 
 **Stack:** Kotlin · Jetpack Compose · Room · AndroidX Security Crypto · Coroutines · R8
@@ -89,10 +101,10 @@ app/
 | Metric | Target | Implementation |
 |--------|--------|----------------|
 | Cold start | < 400ms | `singleTask` launch mode, no bitmap decoding |
-| Idle RAM | < 120MB | No icon cache, no background services |
+| Idle RAM | < 120MB | No icon cache, on-demand DSP synthesis |
 | Search latency | < 16ms | Pre-normalized `searchIndex`, LRU annotation cache |
 | Clock wakeups | 1/min | Aligned tick to minute boundary |
-| APK size | < 5MB | R8 + resource shrinking |
+| APK size | 4.3MB | Pure procedural math synthesis, R8 optimization |
 
 ---
 
@@ -100,32 +112,34 @@ app/
 
 | Permission | Why |
 |---|---|
-| `QUERY_ALL_PACKAGES` | Index all installed apps |
-| `SET_WALLPAPER` | Apply wallpapers |
+| `QUERY_ALL_PACKAGES` | Index all installed apps for instant text search |
+| `SET_WALLPAPER` | Apply custom and procedural wallpapers |
 | `READ_CALENDAR` | Calendar glance (one event, read-only) |
 | `PACKAGE_USAGE_STATS` | Last-opened app context (special app op, opt-in) |
-| `INTERNET` | BYOK AI endpoints only — user-initiated |
-| `VIBRATE` | Haptic feedback for friction pacing |
-| `POST_NOTIFICATIONS` | Android 13+ notification dispatch |
+| `BIND_NOTIFICATION_LISTENER_SERVICE` | Notification Air-Gap quarantine (opt-in) |
+| `INTERNET` | BYOK AI endpoints & Wallhaven only — user-initiated |
+| `VIBRATE` | Haptic feedback for friction pacing and UI triggers |
+| `POST_NOTIFICATIONS` | Android 13+ timer/flowmodoro alerts |
 | `READ_EXTERNAL_STORAGE` | Custom wallpaper import (Android ≤12) |
 
 ---
 
 ## Setup
 
-1. Install the APK — sideload or build from source
+1. Install the APK — sideload `app-release.apk` or build from source
 2. Go to **Settings → Default apps → Home app → a-Ha**
 3. Optional: **Settings → Special app access → Usage access → a-Ha** (for Last Opened bar)
-4. On first launch, complete the interactive onboarding walkthrough
-5. Add your AI API key in **SETTINGS → BYOK KEYS** to unlock task decomposition
+4. Optional: **Settings → Special app access → Notification access → a-Ha** (for Notification Air-Gap)
+5. On first launch, complete the interactive onboarding walkthrough
+6. Add your AI API key in **SETTINGS → BYOK KEYS** to unlock task decomposition
 
 ### Build from source
 
 ```bash
 git clone https://github.com/[YOUR_USERNAME]/a-ha-launcher
 cd a-ha-launcher
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleRelease
+adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
 ---
@@ -145,3 +159,4 @@ Not accepting: icon packs, gamification, social features, anything that increase
 ## License
 
 MIT — see [LICENSE](LICENSE)
+
