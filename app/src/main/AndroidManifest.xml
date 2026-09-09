@@ -48,6 +48,27 @@
             </intent-filter>
         </activity>
 
+        <!-- Mindful Launch Friction Gate -->
+        <activity
+            android:name=".presentation.friction.MindfulDelayActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AHa" />
+
+        <!-- Landscape Charging StandBy Screensaver -->
+        <service
+            android:name=".presentation.desk.DeskModeDreamService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/desk_mode_dream" />
+        </service>
+
     </application>
 
 </manifest>
