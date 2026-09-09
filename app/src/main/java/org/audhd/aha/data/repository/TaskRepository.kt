@@ -65,6 +65,17 @@ class TaskRepository(
     }
 
     /**
+     * Bypasses Room hash cache to re-run AI inference and update task decomposition.
+     */
+    suspend fun regenerateTaskDecomposition(task: TaskItem): TaskItem {
+        val freshSteps = decomposerEngine.decompose(task.title, bypassCache = true)
+        val stepsJson = TaskDecomposerEngine.stepsToJson(freshSteps)
+        val updated = task.copy(subStepsJson = stepsJson)
+        taskDao.updateTask(updated)
+        return updated
+    }
+
+    /**
      * PDA (Pathological Demand Avoidance) safe selector:
      * Selects at most [count] random items from the active list to prevent cognitive overwhelm.
      * Guaranteed deterministic when list size <= [count].

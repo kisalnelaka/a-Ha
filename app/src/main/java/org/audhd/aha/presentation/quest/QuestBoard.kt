@@ -62,6 +62,7 @@ fun QuestBoard(
     onToggleLowSpoon: () -> Unit,
     onTaskCompleted: (TaskItem) -> Unit,
     onAddTask: (title: String, energyLevel: EnergyLevel, decompose: Boolean) -> Unit,
+    onRegenerateTask: (TaskItem) -> Unit = {},
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -198,6 +199,9 @@ fun QuestBoard(
                             onComplete = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                 onTaskCompleted(quest)
+                            },
+                            onRegenerate = {
+                                onRegenerateTask(quest)
                             }
                         )
                     }
@@ -225,7 +229,7 @@ fun QuestBoard(
                     modifier = Modifier.weight(1f).height(44.dp)
                 ) {
                     Text(
-                        text = "🎲 Reroll Paths",
+                        text = "Reroll Paths",
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace
                     )
@@ -269,13 +273,15 @@ fun QuestBoard(
 fun QuestCard(
     task: TaskItem,
     onComplete: () -> Unit,
+    onRegenerate: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val view = LocalView.current
     var expanded by remember { mutableStateOf(false) }
+    var isRegenerating by remember { mutableStateOf(false) }
     val steps = remember(task.subStepsJson) {
         org.audhd.aha.domain.decomposer.TaskDecomposerEngine.parseJsonSteps(task.subStepsJson)
     }
-
 
     val energyColor = when (task.energyLevel) {
         EnergyLevel.LOW.name -> Color(0xFF66AA66)
@@ -329,34 +335,67 @@ fun QuestCard(
                         fontFamily = FontFamily.Monospace
                     )
 
-                    if (steps.isNotEmpty()) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (expanded) "▲ Hide steps" else "▼ ${steps.size} micro-steps",
-                            fontSize = 11.sp,
-                            color = Color(0xFF888888),
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (expanded) "▲ Hide steps" else if (steps.isNotEmpty()) "▼ ${steps.size} micro-steps" else "▼ Details",
+                        fontSize = 11.sp,
+                        color = Color(0xFF888888),
+                        fontFamily = FontFamily.Monospace
+                    )
                 }
             }
         }
 
         // Expanded micro-steps (physical low-friction actions)
-        AnimatedVisibility(visible = expanded && steps.isNotEmpty()) {
+        AnimatedVisibility(visible = expanded) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 36.dp, top = 10.dp)
             ) {
-                steps.forEachIndexed { index, step ->
+                if (steps.isNotEmpty()) {
+                    steps.forEachIndexed { index, step ->
+                        Text(
+                            text = "${index + 1}. $step",
+                            fontSize = 13.sp,
+                            color = Color(0xFFBBBBBB),
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.padding(vertical = 3.dp)
+                        )
+                    }
+                } else {
                     Text(
-                        text = "${index + 1}. $step",
-                        fontSize = 13.sp,
-                        color = Color(0xFFBBBBBB),
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.padding(vertical = 3.dp)
+                        text = "No micro-steps decomposed yet.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF777777),
+                        fontFamily = FontFamily.Monospace
                     )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF1E1E1E), RoundedCornerShape(4.dp))
+                            .border(1.dp, Color(0xFF333333), RoundedCornerShape(4.dp))
+                            .clickable(enabled = !isRegenerating) {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                isRegenerating = true
+                                onRegenerate()
+                            }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (isRegenerating) "Decomposing..." else "[ Regenerate with AI ]",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isRegenerating) Color(0xFF88DD88) else Color(0xFFCCCCCC),
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
                 }
             }
         }

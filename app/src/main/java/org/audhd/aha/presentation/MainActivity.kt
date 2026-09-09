@@ -272,6 +272,11 @@ fun LauncherRoot(
                             taskRepository.createTask(title, "", energy, decompose)
                         }
                     },
+                    onRegenerateTask = { task ->
+                        coroutineScope.launch {
+                            taskRepository.regenerateTaskDecomposition(task)
+                        }
+                    },
                     onDismiss = { isQuestBoardOpen = false }
                 )
             }

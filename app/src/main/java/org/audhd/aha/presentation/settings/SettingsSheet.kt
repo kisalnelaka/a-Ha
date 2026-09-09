@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,8 +50,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.launch
 import org.audhd.aha.data.security.AIProvider
 import org.audhd.aha.data.security.KeystoreManager
+import org.audhd.aha.domain.decomposer.TaskDecomposerEngine
 import org.audhd.aha.domain.typography.toFixationPoint
 import org.audhd.aha.presentation.theme.BorderSubtle
 import org.audhd.aha.presentation.theme.PureBlack
@@ -72,6 +75,7 @@ fun SettingsSheet(
 ) {
     val context = LocalContext.current
     val view = LocalView.current
+    val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
     var selectedProvider by remember { mutableStateOf(keystoreManager.getSelectedProvider()) }
@@ -361,7 +365,33 @@ fun SettingsSheet(
                                     onClick = {
                                         view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                         keystoreManager.setApiKey(selectedProvider, currentKey)
-                                        saveMessage = "${selectedProvider.displayName} key saved securely"
+                                        keystoreManager.setSelectedProvider(selectedProvider)
+                                        coroutineScope.launch {
+                                            saveMessage = "Testing ${selectedProvider.displayName}..."
+                                            val result = TaskDecomposerEngine(keystoreManager = keystoreManager)
+                                                .testConnection(selectedProvider, currentKey)
+                                            saveMessage = if (result.isSuccess) {
+                                                "[ VALID ] ${result.getOrNull()}"
+                                            } else {
+                                                "[ FAILED ] ${result.exceptionOrNull()?.message}"
+                                            }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF1B261B),
+                                        contentColor = Color(0xFF88DD88)
+                                    ),
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text("Test Key", fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        keystoreManager.setApiKey(selectedProvider, currentKey)
+                                        keystoreManager.setSelectedProvider(selectedProvider)
+                                        saveMessage = "${selectedProvider.displayName} key saved securely as active"
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF2A3A2A),
@@ -378,8 +408,8 @@ fun SettingsSheet(
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = saveMessage ?: "",
-                                fontSize = 12.sp,
-                                color = Color(0xFF88CC88),
+                                fontSize = 11.sp,
+                                color = if (saveMessage?.startsWith("[ FAILED ]") == true) Color(0xFFDD8888) else Color(0xFF88CC88),
                                 fontFamily = FontFamily.Monospace
                             )
                         }
