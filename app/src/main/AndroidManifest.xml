@@ -18,6 +18,9 @@
     <!-- AudioTrack ambient noise generation and audio routing -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+    <!-- Direct on-device BYOK AI endpoints (Groq/OpenRouter/Gemini, 0 telemetry) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Tactile haptic feedback for executive function pacing -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
@@ -69,6 +72,18 @@
                 android:resource="@xml/desk_mode_dream" />
         </service>
 
+        <!-- Sensory Regulation & Calm Notification Batching Service -->
+        <service
+            android:name=".service.NotificationBatchService"
+            android:exported="true"
+            android:label="a-Ha Notification Batching"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
     </application>
+
 
 </manifest>
