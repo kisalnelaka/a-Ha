@@ -22,6 +22,18 @@
     <!-- Setting dopamine-neutral dark wallpapers -->
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
 
+    <!-- Calendar glance: next upcoming event within 24h -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
+    <!-- UsageStatsManager for last-opened app context (special app op, granted via Settings) -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Custom wallpaper photo picker (Android 12 and below) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
 
     <application
         android:allowBackup="false"

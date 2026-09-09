@@ -69,6 +69,7 @@ class MindfulDelayActivity : ComponentActivity() {
         val targetPackage = intent.getStringExtra(EXTRA_TARGET_PACKAGE) ?: ""
         val targetActivity = intent.getStringExtra(EXTRA_TARGET_ACTIVITY) ?: ""
         val appLabel = intent.getStringExtra(EXTRA_APP_LABEL) ?: "Target Application"
+        val delaySeconds = intent.getIntExtra(EXTRA_DELAY_SECONDS, 12)
 
         if (targetPackage.isEmpty()) {
             finish()
@@ -83,6 +84,7 @@ class MindfulDelayActivity : ComponentActivity() {
                 ) {
                     MindfulDelayScreen(
                         appLabel = appLabel,
+                        delaySeconds = delaySeconds,
                         onTurnBack = { finish() },
                         onProceed = {
                             launchTarget(targetPackage, targetActivity)
@@ -119,16 +121,18 @@ class MindfulDelayActivity : ComponentActivity() {
         const val EXTRA_TARGET_PACKAGE = "extra_target_package"
         const val EXTRA_TARGET_ACTIVITY = "extra_target_activity"
         const val EXTRA_APP_LABEL = "extra_app_label"
+        const val EXTRA_DELAY_SECONDS = "extra_delay_seconds"
     }
 }
 
 @Composable
 fun MindfulDelayScreen(
     appLabel: String,
+    delaySeconds: Int = 12,
     onTurnBack: () -> Unit,
     onProceed: () -> Unit
 ) {
-    var secondsRemaining by remember { mutableIntStateOf(12) }
+    var secondsRemaining by remember { mutableIntStateOf(delaySeconds.coerceIn(1, 120)) }
     var intentionText by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {

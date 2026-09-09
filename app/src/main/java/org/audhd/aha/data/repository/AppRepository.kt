@@ -21,7 +21,11 @@ import org.audhd.aha.presentation.friction.MindfulDelayActivity
  * - Runs discovery strictly off the main thread on [Dispatchers.IO].
  * - Omits icon bitmap decodes entirely, retaining solely metadata string representations.
  */
-class AppRepository(private val context: Context? = null) {
+class AppRepository(
+    private val context: Context? = null,
+    private val hiddenAppsRepository: HiddenAppsRepository? = null,
+    private val frictionRepository: FrictionRepository? = null
+) {
 
     private val launcherApps: LauncherApps? =
         context?.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
@@ -123,9 +127,11 @@ class AppRepository(private val context: Context? = null) {
      * Filters apps based on the user's input search query.
      */
     fun filterApps(query: String, sourceList: List<AppInfo> = _installedApps.value): List<AppInfo> {
-        if (query.isBlank()) return sourceList
+        val hidden = hiddenAppsRepository?.hiddenPackages?.value ?: emptySet()
+        val visible = if (hidden.isEmpty()) sourceList else sourceList.filter { it.packageName !in hidden }
+        if (query.isBlank()) return visible
         val trimmed = query.trim().lowercase()
-        return sourceList.filter { app ->
+        return visible.filter { app ->
             app.searchIndex.contains(trimmed)
         }
     }
@@ -136,11 +142,13 @@ class AppRepository(private val context: Context? = null) {
     fun launchApp(app: AppInfo) {
         val ctx = context ?: return
         if (app.isDistractionApp) {
+            val delaySeconds = frictionRepository?.getDelay(app.packageName) ?: 12
             val frictionIntent = Intent(ctx, MindfulDelayActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 putExtra(MindfulDelayActivity.EXTRA_TARGET_PACKAGE, app.packageName)
                 putExtra(MindfulDelayActivity.EXTRA_TARGET_ACTIVITY, app.activityName)
                 putExtra(MindfulDelayActivity.EXTRA_APP_LABEL, app.label)
+                putExtra(MindfulDelayActivity.EXTRA_DELAY_SECONDS, delaySeconds)
             }
             ctx.startActivity(frictionIntent)
         } else {

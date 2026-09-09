@@ -78,6 +78,15 @@ import org.audhd.aha.presentation.theme.TextMuted
 import org.audhd.aha.presentation.theme.TextPrimary
 import org.audhd.aha.presentation.theme.TextSecondary
 import org.audhd.aha.presentation.wallpaper.WallpaperPickerSheet
+import org.audhd.aha.data.repository.DailyAnchorRepository
+import org.audhd.aha.data.repository.HiddenAppsRepository
+import org.audhd.aha.data.repository.FrictionRepository
+import org.audhd.aha.presentation.home.DailyAnchorWidget
+import org.audhd.aha.presentation.home.CalendarGlanceCard
+import org.audhd.aha.presentation.home.LastOpenedBar
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 
 /**
  * Root Launcher Activity orchestrating the AuDHD executive functioning interface.
@@ -91,6 +100,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var soundScapeEngine: SoundScapeEngine
     private lateinit var screenTimeTintController: ScreenTimeTintController
     private lateinit var keystoreManager: KeystoreManager
+    private lateinit var dailyAnchorRepository: DailyAnchorRepository
+    private lateinit var hiddenAppsRepository: HiddenAppsRepository
+    private lateinit var frictionRepository: FrictionRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,10 +111,13 @@ class MainActivity : ComponentActivity() {
         keystoreManager = KeystoreManager(applicationContext)
         val decomposerEngine = TaskDecomposerEngine(appDatabase.taskDao(), keystoreManager)
 
-        appRepository = AppRepository(applicationContext)
+        hiddenAppsRepository = HiddenAppsRepository(applicationContext)
+        frictionRepository = FrictionRepository(applicationContext)
+        appRepository = AppRepository(applicationContext, hiddenAppsRepository, frictionRepository)
         scratchpadRepository = ScratchpadRepository(applicationContext)
         taskRepository = TaskRepository(appDatabase.taskDao(), decomposerEngine)
         wallpaperRepository = WallpaperRepository(applicationContext)
+        dailyAnchorRepository = DailyAnchorRepository(applicationContext)
         soundScapeEngine = SoundScapeEngine()
         screenTimeTintController = ScreenTimeTintController(applicationContext)
 
@@ -120,6 +135,9 @@ class MainActivity : ComponentActivity() {
                         soundScapeEngine = soundScapeEngine,
                         screenTimeTintController = screenTimeTintController,
                         keystoreManager = keystoreManager,
+                        dailyAnchorRepository = dailyAnchorRepository,
+                        hiddenAppsRepository = hiddenAppsRepository,
+                        frictionRepository = frictionRepository,
                         onCallClicked = ::launchDialer,
                         onTextClicked = ::launchSms,
                         onNavigateClicked = ::launchNavigation
@@ -167,6 +185,9 @@ fun LauncherRoot(
     soundScapeEngine: SoundScapeEngine,
     screenTimeTintController: ScreenTimeTintController,
     keystoreManager: KeystoreManager,
+    dailyAnchorRepository: DailyAnchorRepository,
+    hiddenAppsRepository: HiddenAppsRepository,
+    frictionRepository: FrictionRepository,
     onCallClicked: () -> Unit,
     onTextClicked: () -> Unit,
     onNavigateClicked: () -> Unit
@@ -304,6 +325,8 @@ fun LauncherRoot(
                         isDrawerOpen = false
                         searchQuery = ""
                     },
+                    hiddenAppsRepository = hiddenAppsRepository,
+                    frictionRepository = frictionRepository,
                     modifier = Modifier
                         .statusBarsPadding()
                         .navigationBarsPadding()
@@ -318,6 +341,7 @@ fun LauncherRoot(
                     currentNoise = currentNoise,
                     isDefaultLauncher = isDefault,
                     activeTaskCount = activeCount,
+                    dailyAnchorRepository = dailyAnchorRepository,
                     onToggleNoise = {
                         val next = when (currentNoise) {
                             null -> NoiseType.BROWN
@@ -370,6 +394,7 @@ fun LauncherHomeScreen(
     currentNoise: NoiseType?,
     isDefaultLauncher: Boolean,
     activeTaskCount: Int,
+    dailyAnchorRepository: DailyAnchorRepository,
     onToggleNoise: () -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenScratchpad: () -> Unit,
@@ -525,6 +550,24 @@ fun LauncherHomeScreen(
             }
 
             Spacer(modifier = Modifier.height(14.dp))
+
+            // Daily Anchor — one-thing-today focus field
+            DailyAnchorWidget(
+                repository = dailyAnchorRepository,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Calendar Glance — next event within 24h
+            CalendarGlanceCard(modifier = Modifier.fillMaxWidth())
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Last opened context bar
+            LastOpenedBar()
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Persistent Desk & Flowmodoro Widget
             DeskWidget(modifier = Modifier.fillMaxWidth())
