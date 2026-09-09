@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -58,9 +60,10 @@ import kotlin.random.Random
  * Persistent Desk and Focus Hero Widget.
  *
  * Capabilities:
- * - Real-time glanceable desk clock and date with AMOLED burn-in mitigation.
- * - Flowmodoro count-up timer with proportional break calculator directly in-widget.
- * - Persistent Desk Standby toggle (FLAG_KEEP_SCREEN_ON) keeping screen awake on desk mounts.
+ * - High-contrast glanceable desk clock and date with fixation point typography.
+ * - Flowmodoro hyperfocus stopwatch with proportional break calculator (1:5).
+ * - AMOLED anti-burn-in spatial jitter (shifts by +/-3 px every 60s).
+ * - Persistent Desk Standby toggle keeping display awake on desktop docks.
  */
 @Composable
 fun DeskWidget(
@@ -88,14 +91,13 @@ fun DeskWidget(
     // Live Clock & Burn-in loop
     LaunchedEffect(Unit) {
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
 
         while (isActive) {
             val now = Date()
             currentTimeString = timeFormat.format(now)
-            currentDateString = dateFormat.format(now)
+            currentDateString = dateFormat.format(now).uppercase()
 
-            // Shift pixels slightly if desk standby is on
             if (isDeskStandbyActive && Random.nextFloat() < 0.2f) {
                 pixelShiftX = Random.nextInt(-3, 4)
                 pixelShiftY = Random.nextInt(-3, 4)
@@ -121,8 +123,8 @@ fun DeskWidget(
         modifier = modifier
             .fillMaxWidth()
             .offset { IntOffset(pixelShiftX, pixelShiftY) }
-            .background(SurfaceCharcoal, RoundedCornerShape(12.dp))
-            .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+            .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
+            .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
             .padding(18.dp)
     ) {
         Column {
@@ -135,17 +137,19 @@ fun DeskWidget(
                 Column {
                     Text(
                         text = if (currentTimeString.isEmpty()) "--:--" else currentTimeString,
-                        fontSize = 44.sp,
+                        fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
                         fontFamily = FontFamily.Monospace,
-                        letterSpacing = (-1).sp
+                        letterSpacing = (-1.5).sp
                     )
                     Text(
                         text = currentDateString.toFixationPoint(),
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = TextSecondary,
-                        fontFamily = FontFamily.Monospace
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 0.5.sp
                     )
                 }
 
@@ -153,13 +157,13 @@ fun DeskWidget(
                 Box(
                     modifier = Modifier
                         .background(
-                            if (isDeskStandbyActive) Color(0xFF1E2D1E) else Color(0xFF161616),
-                            RoundedCornerShape(6.dp)
+                            if (isDeskStandbyActive) Color(0xFF1B261B) else Color(0xFF141414),
+                            RoundedCornerShape(4.dp)
                         )
                         .border(
                             1.dp,
-                            if (isDeskStandbyActive) Color(0xFF448844) else Color(0xFF262626),
-                            RoundedCornerShape(6.dp)
+                            if (isDeskStandbyActive) Color(0xFF386038) else Color(0xFF262626),
+                            RoundedCornerShape(4.dp)
                         )
                         .clickable {
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
@@ -167,18 +171,32 @@ fun DeskWidget(
                         }
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Text(
-                        text = if (isDeskStandbyActive) "Desk: Stay Awake" else "Desk: Sleep Normal",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isDeskStandbyActive) Color(0xFF88DD88) else TextMuted,
-                        fontFamily = FontFamily.Monospace
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(
+                                    if (isDeskStandbyActive) Color(0xFF88DD88) else Color(0xFF555555),
+                                    CircleShape
+                                )
+                        )
+                        Text(
+                            text = if (isDeskStandbyActive) "STANDBY: AWAKE" else "STANDBY: OFF",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDeskStandbyActive) Color(0xFF88DD88) else TextMuted,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = Color(0xFF1E1E1E), thickness = 1.dp)
+            HorizontalDivider(color = Color(0xFF1C1C1C), thickness = 1.dp)
             Spacer(modifier = Modifier.height(14.dp))
 
             // Flowmodoro Integrated Section
@@ -191,14 +209,15 @@ fun DeskWidget(
                     ) {
                         Column {
                             Text(
-                                text = "Flowmodoro Focus".toFixationPoint(),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                text = "FLOW TIMER".toFixationPoint(),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = TextPrimary,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 1.sp
                             )
                             Text(
-                                text = "Count up • Earn proportional break (1:5)",
+                                text = "Continuous count-up • 1:5 recovery",
                                 fontSize = 11.sp,
                                 color = TextMuted,
                                 fontFamily = FontFamily.Monospace
@@ -207,20 +226,21 @@ fun DeskWidget(
 
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFF222222), RoundedCornerShape(6.dp))
-                                .border(1.dp, Color(0xFF383838), RoundedCornerShape(6.dp))
+                                .background(Color(0xFF202020), RoundedCornerShape(4.dp))
+                                .border(1.dp, Color(0xFF383838), RoundedCornerShape(4.dp))
                                 .clickable {
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                     flowmodoro.startFocus()
                                 }
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = "▶ Start Focus",
-                                fontSize = 12.sp,
+                                text = "[ START FLOW ]",
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.5.sp
                             )
                         }
                     }
@@ -237,26 +257,28 @@ fun DeskWidget(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 Box(
                                     modifier = Modifier
-                                        .background(Color(0xFF44AA44), RoundedCornerShape(3.dp))
-                                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "FOCUSING",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                        .size(6.dp)
+                                        .background(Color(0xFF88DD88), CircleShape)
+                                )
+                                Text(
+                                    text = "IN FLOW",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF88DD88),
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 1.sp
+                                )
                                 Text(
                                     text = state.formattedTime,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF88DD88),
+                                    color = TextPrimary,
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
@@ -271,8 +293,8 @@ fun DeskWidget(
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Box(
                                 modifier = Modifier
-                                    .background(Color(0xFF282818), RoundedCornerShape(4.dp))
-                                    .border(1.dp, Color(0xFF555522), RoundedCornerShape(4.dp))
+                                    .background(Color(0xFF222018), RoundedCornerShape(4.dp))
+                                    .border(1.dp, Color(0xFF484024), RoundedCornerShape(4.dp))
                                     .clickable {
                                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                         flowmodoro.stopFocus()
@@ -280,27 +302,29 @@ fun DeskWidget(
                                     .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 Text(
-                                    text = "Take Break",
+                                    text = "[ REST ]",
                                     fontSize = 11.sp,
-                                    color = Color(0xFFDDDD88),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD8C070),
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
 
                             Box(
                                 modifier = Modifier
-                                    .background(Color(0xFF281818), RoundedCornerShape(4.dp))
-                                    .border(1.dp, Color(0xFF552222), RoundedCornerShape(4.dp))
+                                    .background(Color(0xFF221616), RoundedCornerShape(4.dp))
+                                    .border(1.dp, Color(0xFF482424), RoundedCornerShape(4.dp))
                                     .clickable {
                                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                         flowmodoro.reset()
                                     }
                                     .padding(horizontal = 10.dp, vertical = 6.dp)
-                                ) {
+                            ) {
                                 Text(
-                                    text = "Stop",
+                                    text = "[ STOP ]",
                                     fontSize = 11.sp,
-                                    color = Color(0xFFDD8888),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD88080),
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
@@ -315,31 +339,33 @@ fun DeskWidget(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 Box(
                                     modifier = Modifier
-                                        .background(Color(0xFFDD9933), RoundedCornerShape(3.dp))
-                                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "BREAK",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                        .size(6.dp)
+                                        .background(Color(0xFFDFAB55), CircleShape)
+                                )
+                                Text(
+                                    text = "RECOVERY",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFDFAB55),
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 1.sp
+                                )
                                 Text(
                                     text = state.formattedTime,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFEEBB66),
+                                    color = Color(0xFFDFAB55),
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
                             Text(
-                                text = "Rest your executive prefrontal cortex",
+                                text = "Autonomic nervous restoration",
                                 fontSize = 11.sp,
                                 color = TextMuted,
                                 fontFamily = FontFamily.Monospace
@@ -348,7 +374,8 @@ fun DeskWidget(
 
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFF222222), RoundedCornerShape(4.dp))
+                                .background(Color(0xFF202020), RoundedCornerShape(4.dp))
+                                .border(1.dp, Color(0xFF383838), RoundedCornerShape(4.dp))
                                 .clickable {
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                     flowmodoro.reset()
@@ -356,8 +383,9 @@ fun DeskWidget(
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = "Finish Break",
+                                text = "[ DISMISS ]",
                                 fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = TextPrimary,
                                 fontFamily = FontFamily.Monospace
                             )

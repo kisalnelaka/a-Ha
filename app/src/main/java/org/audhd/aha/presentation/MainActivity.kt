@@ -404,32 +404,38 @@ fun LauncherHomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "a-Ha AuDHD",
+                        text = "a-Ha".toFixationPoint(),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
-                        fontFamily = FontFamily.Monospace
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.sp
                     )
                     Text(
-                        text = if (isLowSpoonMode) "🥄 Low-Spoon Mode" else "⚡ Dopamine-Neutral",
-                        fontSize = 11.sp,
-                        color = if (isLowSpoonMode) Color(0xFFDDDD88) else Color(0xFF779977),
-                        fontFamily = FontFamily.Monospace
+                        text = if (isLowSpoonMode) "LOW-SPOON ACTIVE" else "DOPAMINE-NEUTRAL",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isLowSpoonMode) Color(0xFFC8B870) else TextMuted,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.sp
                     )
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     // Audio Ambient Pill
                     Box(
                         modifier = Modifier
                             .background(
-                                if (currentNoise != null) Color(0xFF1E2D1E) else Color(0xFF161616),
-                                RoundedCornerShape(6.dp)
+                                if (currentNoise != null) Color(0xFF1B261B) else Color(0xFF141414),
+                                RoundedCornerShape(4.dp)
                             )
                             .border(
                                 1.dp,
-                                if (currentNoise != null) Color(0xFF448844) else Color(0xFF262626),
-                                RoundedCornerShape(6.dp)
+                                if (currentNoise != null) Color(0xFF386038) else Color(0xFF242424),
+                                RoundedCornerShape(4.dp)
                             )
                             .clickable {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -438,7 +444,7 @@ fun LauncherHomeScreen(
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = if (currentNoise == null) "🔇 Audio" else "🔊 ${currentNoise.name}",
+                            text = if (currentNoise == null) "AUDIO: OFF" else "AUDIO: ${currentNoise.name}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (currentNoise != null) Color(0xFF88DD88) else TextMuted,
@@ -449,8 +455,8 @@ fun LauncherHomeScreen(
                     // Settings & BYOK Keys Pill
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFF161616), RoundedCornerShape(6.dp))
-                            .border(1.dp, Color(0xFF262626), RoundedCornerShape(6.dp))
+                            .background(Color(0xFF141414), RoundedCornerShape(4.dp))
+                            .border(1.dp, Color(0xFF242424), RoundedCornerShape(4.dp))
                             .clickable {
                                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                 onOpenSettings()
@@ -458,7 +464,7 @@ fun LauncherHomeScreen(
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = "⚙ Settings",
+                            text = "SETTINGS",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = TextSecondary,
@@ -474,8 +480,8 @@ fun LauncherHomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF221A10), RoundedCornerShape(8.dp))
-                        .border(1.dp, Color(0xFF553A1A), RoundedCornerShape(8.dp))
+                        .background(Color(0xFF1C1710), RoundedCornerShape(6.dp))
+                        .border(1.dp, Color(0xFF4A341A), RoundedCornerShape(6.dp))
                         .clickable {
                             view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                             onRequestDefaultLauncher()
@@ -489,24 +495,24 @@ fun LauncherHomeScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Set a-Ha as Default Launcher",
+                                text = "DEFAULT LAUNCHER NOT SET".toFixationPoint(),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFEEBB66),
+                                color = Color(0xFFDFAB55),
                                 fontFamily = FontFamily.Monospace
                             )
                             Text(
-                                text = "Tap here to make a-Ha your primary home screen",
+                                text = "Tap to set a-Ha as your primary home app",
                                 fontSize = 10.sp,
-                                color = Color(0xFFBBAA88),
+                                color = Color(0xFFA09070),
                                 fontFamily = FontFamily.Monospace
                             )
                         }
                         Text(
-                            text = "Set →",
-                            fontSize = 12.sp,
+                            text = "[ CONFIGURE ]",
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFFFFFF),
+                            color = Color(0xFFDFAB55),
                             fontFamily = FontFamily.Monospace
                         )
                     }
@@ -520,7 +526,7 @@ fun LauncherHomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3 High-Scaffolding Action Cards
+            // 3 Scaffolding Action Modules
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -529,25 +535,26 @@ fun LauncherHomeScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(SurfaceCharcoal, RoundedCornerShape(10.dp))
-                        .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
+                        .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
                         .clickable {
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onOpenQuestBoard()
                         }
-                        .padding(12.dp)
+                        .padding(14.dp)
                 ) {
                     Column {
                         Text(
-                            text = "📋 Quests".toFixationPoint(),
-                            fontSize = 13.sp,
+                            text = "QUESTS".toFixationPoint(),
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (activeTaskCount == 0) "No active quests" else "$activeTaskCount active",
+                            text = if (activeTaskCount == 0) "All clear" else "$activeTaskCount active",
                             fontSize = 11.sp,
                             color = if (activeTaskCount > 0) Color(0xFF88DD88) else TextMuted,
                             fontFamily = FontFamily.Monospace
@@ -565,25 +572,26 @@ fun LauncherHomeScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(SurfaceCharcoal, RoundedCornerShape(10.dp))
-                        .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
+                        .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
                         .clickable {
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onOpenScratchpad()
                         }
-                        .padding(12.dp)
+                        .padding(14.dp)
                 ) {
                     Column {
                         Text(
-                            text = "📝 Scratch".toFixationPoint(),
-                            fontSize = 13.sp,
+                            text = "SCRATCH".toFixationPoint(),
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Thought dump",
+                            text = "Working memory",
                             fontSize = 11.sp,
                             color = TextSecondary,
                             fontFamily = FontFamily.Monospace
@@ -601,31 +609,32 @@ fun LauncherHomeScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(SurfaceCharcoal, RoundedCornerShape(10.dp))
-                        .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
+                        .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
                         .clickable {
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onOpenWallpaperPicker()
                         }
-                        .padding(12.dp)
+                        .padding(14.dp)
                 ) {
                     Column {
                         Text(
-                            text = "🎨 Wallpapers".toFixationPoint(),
-                            fontSize = 13.sp,
+                            text = "SURFACE".toFixationPoint(),
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Dark minimal",
+                            text = "Wallpapers",
                             fontSize = 11.sp,
                             color = TextSecondary,
                             fontFamily = FontFamily.Monospace
                         )
                         Text(
-                            text = "AMOLED",
+                            text = "Dark minimal",
                             fontSize = 9.sp,
                             color = TextMuted,
                             fontFamily = FontFamily.Monospace
@@ -636,17 +645,17 @@ fun LauncherHomeScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Low-Spoon Mode Toggle Button
+            // Low-Spoon Mode Regulation Bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        if (isLowSpoonMode) Color(0xFF282818) else Color(0xFF141414),
+                        if (isLowSpoonMode) Color(0xFF1E1E14) else Color(0xFF121212),
                         RoundedCornerShape(8.dp)
                     )
                     .border(
                         1.dp,
-                        if (isLowSpoonMode) Color(0xFF555522) else Color(0xFF242424),
+                        if (isLowSpoonMode) Color(0xFF444422) else Color(0xFF202020),
                         RoundedCornerShape(8.dp)
                     )
                     .clickable {
@@ -660,17 +669,27 @@ fun LauncherHomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Column {
+                        Text(
+                            text = "LOW-SPOON REGULATION".toFixationPoint(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isLowSpoonMode) Color(0xFFDFDF88) else TextPrimary,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 0.5.sp
+                        )
+                        Text(
+                            text = if (isLowSpoonMode) "Energy conservation active • Demand reduced" else "Demand reduction for executive fatigue",
+                            fontSize = 10.sp,
+                            color = if (isLowSpoonMode) Color(0xFFB0B070) else TextMuted,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
                     Text(
-                        text = if (isLowSpoonMode) "🥄 Low-Spoon Mode: Demand reduction active" else "🥄 Overwhelmed? Switch to Low-Spoon Mode",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isLowSpoonMode) Color(0xFFDDDD88) else TextSecondary,
-                        fontFamily = FontFamily.Monospace
-                    )
-                    Text(
-                        text = if (isLowSpoonMode) "[ ACTIVE ]" else "[ TOGGLE ]",
+                        text = if (isLowSpoonMode) "[ ACTIVE ]" else "[ INACTIVE ]",
                         fontSize = 11.sp,
-                        color = if (isLowSpoonMode) Color(0xFF88CC88) else TextMuted,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isLowSpoonMode) Color(0xFF88DD88) else TextMuted,
                         fontFamily = FontFamily.Monospace
                     )
                 }
@@ -678,7 +697,7 @@ fun LauncherHomeScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Search Bar Button Trigger
+            // Command-Style Search Trigger
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -698,22 +717,24 @@ fun LauncherHomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "🔍 Search or open apps...".toFixationPoint(),
+                        text = "Type to search or launch...".toFixationPoint(),
                         color = TextMuted,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace
                     )
                     Text(
-                        text = "Swipe up ↑",
-                        color = TextMuted,
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace
+                        text = "DRAWER ↑",
+                        color = TextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.sp
                     )
                 }
             }
         }
 
-        // Bottom Section: Refined 4-item Utility Dock
+        // Bottom Section: Refined Monospace Utility Dock
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -724,17 +745,17 @@ fun LauncherHomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(48.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                UtilityDockItem(label = "📞 Phone", onClick = onCallClicked)
-                Text(text = "•", color = Color(0xFF333333), fontSize = 12.sp)
-                UtilityDockItem(label = "💬 Text", onClick = onTextClicked)
-                Text(text = "•", color = Color(0xFF333333), fontSize = 12.sp)
-                UtilityDockItem(label = "🧭 Maps", onClick = onNavigateClicked)
-                Text(text = "•", color = Color(0xFF333333), fontSize = 12.sp)
-                UtilityDockItem(label = "📱 Apps", onClick = onOpenDrawer)
+                UtilityDockItem(label = "PHONE", onClick = onCallClicked)
+                Text(text = "·", color = Color(0xFF444444), fontSize = 14.sp)
+                UtilityDockItem(label = "MESSAGES", onClick = onTextClicked)
+                Text(text = "·", color = Color(0xFF444444), fontSize = 14.sp)
+                UtilityDockItem(label = "MAPS", onClick = onNavigateClicked)
+                Text(text = "·", color = Color(0xFF444444), fontSize = 14.sp)
+                UtilityDockItem(label = "DRAWER", onClick = onOpenDrawer)
             }
         }
     }
@@ -749,15 +770,16 @@ private fun UtilityDockItem(
     val view = LocalView.current
     Text(
         text = label.toFixationPoint(boldWeight = FontWeight.Bold),
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.labelMedium,
         color = TextPrimary,
         textAlign = TextAlign.Center,
         fontFamily = FontFamily.Monospace,
+        letterSpacing = 1.sp,
         modifier = modifier
             .clickable(onClick = {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                 onClick()
             })
-            .padding(horizontal = 10.dp, vertical = 10.dp)
+            .padding(horizontal = 12.dp, vertical = 10.dp)
     )
 }
