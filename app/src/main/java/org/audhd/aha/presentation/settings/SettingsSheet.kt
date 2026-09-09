@@ -58,7 +58,6 @@ import org.audhd.aha.data.security.KeystoreManager
 import org.audhd.aha.domain.decomposer.TaskDecomposerEngine
 import org.audhd.aha.domain.typography.toFixationPoint
 import org.audhd.aha.presentation.desk.DeskModeActivity
-import org.audhd.aha.data.repository.QuarantineRepository
 import org.audhd.aha.presentation.theme.BorderSubtle
 import org.audhd.aha.presentation.theme.PureBlack
 import org.audhd.aha.presentation.theme.SurfaceCharcoal
@@ -73,7 +72,6 @@ import org.audhd.aha.presentation.theme.TextSecondary
 @Composable
 fun SettingsSheet(
     keystoreManager: KeystoreManager,
-    quarantineRepository: QuarantineRepository,
     onOpenOnboarding: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -443,106 +441,7 @@ fun SettingsSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
 
-                // Notification Air-Gap Section
-                Text(
-                    text = "NOTIFICATION AIR-GAP (SHIELD)".toFixationPoint(),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFD54F),
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
-                        .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
-                        .padding(16.dp)
-                ) {
-                    val isAccessGranted = remember {
-                        androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(context)
-                            .contains(context.packageName)
-                    }
-                    val isAirGapOn by quarantineRepository.isAirGapEnabled.collectAsState()
-
-                    Column {
-                        Text(
-                            text = "Suppresses external app pings into a scheduled monospace digest. Eliminates variable-ratio dopamine triggers while preserving high-priority notifications.",
-                            fontSize = 12.sp,
-                            color = TextMuted,
-                            lineHeight = 18.sp,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (!isAccessGranted) {
-                            Button(
-                                onClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                    try {
-                                        context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        })
-                                    } catch (_: Exception) {
-                                        context.startActivity(Intent(Settings.ACTION_SETTINGS).apply {
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        })
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF2E240C),
-                                    contentColor = Color(0xFFFFD54F)
-                                ),
-                                shape = RoundedCornerShape(4.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "Grant Notification Listener Access →",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace
-                                )
-                            }
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = if (isAirGapOn) "AIR-GAP ACTIVE" else "AIR-GAP DISABLED",
-                                    color = if (isAirGapOn) Color(0xFF88DD88) else TextMuted,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace
-                                )
-
-                                Button(
-                                    onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                        quarantineRepository.setAirGapEnabled(!isAirGapOn)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (isAirGapOn) Color(0xFF1B261B) else Color(0xFF222222),
-                                        contentColor = if (isAirGapOn) Color(0xFF88DD88) else Color(0xFFCCCCCC)
-                                    ),
-                                    shape = RoundedCornerShape(4.dp)
-                                ) {
-                                    Text(
-                                        text = if (isAirGapOn) "[ ON ]" else "[ OFF ]",
-                                        fontSize = 11.5.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 

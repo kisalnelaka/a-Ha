@@ -25,10 +25,6 @@
     <!-- Calendar glance: next upcoming event within 24h -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
 
-    <!-- UsageStatsManager for last-opened app context (special app op, granted via Settings) -->
-    <uses-permission
-        android:name="android.permission.PACKAGE_USAGE_STATS"
-        tools:ignore="ProtectedPermissions" />
 
     <!-- Custom wallpaper photo picker (Android 12 and below) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
@@ -89,17 +85,6 @@
             <meta-data
                 android:name="android.service.dream"
                 android:resource="@xml/desk_mode_dream" />
-        </service>
-
-        <!-- Notification Air-Gap Dopamine Shield Service -->
-        <service
-            android:name=".domain.notifications.NotificationQuarantineService"
-            android:exported="true"
-            android:label="a-Ha Notification Air-Gap"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
         </service>
 
     </application>

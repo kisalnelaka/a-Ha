@@ -81,11 +81,9 @@ import org.audhd.aha.presentation.wallpaper.WallpaperPickerSheet
 import org.audhd.aha.data.repository.DailyAnchorRepository
 import org.audhd.aha.data.repository.HiddenAppsRepository
 import org.audhd.aha.data.repository.FrictionRepository
-import org.audhd.aha.data.repository.QuarantineRepository
 import org.audhd.aha.presentation.home.DailyAnchorWidget
 import org.audhd.aha.presentation.home.CalendarGlanceCard
 import org.audhd.aha.presentation.home.LastOpenedBar
-import org.audhd.aha.presentation.components.QuarantineDigestCard
 import org.audhd.aha.presentation.components.DayProgressRuler
 import org.audhd.aha.presentation.omnibar.OmnibarWidget
 import androidx.compose.animation.AnimatedVisibility
@@ -218,7 +216,6 @@ fun LauncherRoot(
     var isLowSpoonMode by remember { mutableStateOf(false) }
     var currentNoise by remember { mutableStateOf<NoiseType?>(null) }
     var searchQuery by remember { mutableStateOf("") }
-    val quarantineRepository = remember { QuarantineRepository.getInstance(context) }
     var isBlackoutMode by remember { mutableStateOf(false) }
 
     val activity = context as? Activity
@@ -293,7 +290,6 @@ fun LauncherRoot(
             isSettingsOpen -> {
                 SettingsSheet(
                     keystoreManager = keystoreManager,
-                    quarantineRepository = quarantineRepository,
                     onOpenOnboarding = {
                         isSettingsOpen = false
                         isOnboardingOpen = true
@@ -361,7 +357,6 @@ fun LauncherRoot(
 
                 LauncherHomeScreen(
                     apps = apps,
-                    quarantineRepository = quarantineRepository,
                     isLowSpoonMode = isLowSpoonMode,
                     currentNoise = currentNoise,
                     isDefaultLauncher = isDefault,
@@ -438,7 +433,6 @@ fun LauncherRoot(
 @Composable
 fun LauncherHomeScreen(
     apps: List<AppInfo>,
-    quarantineRepository: QuarantineRepository,
     isLowSpoonMode: Boolean,
     currentNoise: NoiseType?,
     isDefaultLauncher: Boolean,
@@ -624,13 +618,7 @@ fun LauncherHomeScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Notification Air-Gap Quarantine Card (renders only if notifications are quarantined)
-            QuarantineDigestCard(
-                quarantineRepository = quarantineRepository,
-                modifier = Modifier.fillMaxWidth()
-            )
 
-            Spacer(modifier = Modifier.height(10.dp))
 
             // Omnibar: Instant indexed search, math (:calc), task creation (+), AI (?):
             OmnibarWidget(

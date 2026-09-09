@@ -23,8 +23,7 @@ The core thesis: your phone's home screen should be a **tool**, not a dopamine d
 - **Flowmodoro Timer** — count-up focus sessions with intuitive break scaffolding
 - **Working Memory Scratchpad** — swipe-down persistent notepad, never lost between app switches
 
-### Impulse Friction & Interception
-- **Notification Air-Gap (Quarantine)** — intercepts status bar notifications and dopamine badges into a calm, batched on-demand digest
+### Impulse Friction System
 - **Mindful Delay Gate** — configurable 5/15/30/60s breathing pause before designated distraction apps
 - **Intention Capture** — optional "I'm opening this to..." text box before launching social media
 - **App Hiding** — remove apps from the drawer without uninstalling (long-press → hide)
@@ -51,9 +50,10 @@ The core thesis: your phone's home screen should be a **tool**, not a dopamine d
 
 ### Privacy
 - **Zero telemetry** — no analytics, no crash reporting, no network calls without explicit user action
+- **Zero privileged listeners** — no NotificationListenerService, no SMS reading, no security warning vectors
 - **BYOK AI** — bring your own API key; keys stored in Android Keystore (hardware-backed encryption)
 - **Zero asset bloat** — no heavy bitmaps or audio files; soundscapes and wallpapers are synthesized mathematically in code
-- **On-device everything** — UsageStats, calendar, tasks, notifications all local-only
+- **On-device everything** — UsageStats, calendar, tasks all local-only
 
 ---
 
@@ -65,14 +65,13 @@ app/
 │   ├── local/          # Room database (tasks, scratchpad)
 │   ├── model/          # AppInfo with pre-normalized searchIndex
 │   └── repository/     # AppRepository, TaskRepository, WallpaperRepository,
-│                       # QuarantineRepository, DailyAnchorRepository, HiddenAppsRepository
+│                       # DailyAnchorRepository, HiddenAppsRepository, FrictionRepository
 ├── domain/
 │   ├── audio/          # SoundScapeEngine — AudioTrack DSP (Binaural Beats, Rain, Noise)
 │   ├── calendar/       # CalendarGlanceProvider
 │   ├── decomposer/     # TaskDecomposerEngine — multi-provider AI task decomposition
 │   ├── eval/           # SimpleMathEvaluator — recursive-descent math parser
 │   ├── screentime/     # ScreenTimeTintController — circadian tinting
-│   ├── service/        # NotificationQuarantineService — NotificationListenerService
 │   ├── typography/     # FixationPointParser — bionic reading with LRU cache
 │   └── usagestats/     # LastOpenedProvider — UsageStatsManager wrapper
 └── presentation/
@@ -82,7 +81,6 @@ app/
     ├── drawer/         # AppDrawer — text-only, long-press context menu
     ├── friction/       # MindfulDelayActivity — configurable breathing gate
     ├── home/           # DailyAnchorWidget, CalendarGlanceCard, LastOpenedBar
-    ├── notification/   # QuarantineDigestCard — batched notification review
     ├── omnibar/        # OmnibarWidget — universal command & math terminal
     ├── onboarding/     # OnboardingScreen — interactive first-launch walkthrough
     ├── quest/          # QuestBoard — task management with AI decomposition
@@ -115,8 +113,6 @@ app/
 | `QUERY_ALL_PACKAGES` | Index all installed apps for instant text search |
 | `SET_WALLPAPER` | Apply custom and procedural wallpapers |
 | `READ_CALENDAR` | Calendar glance (one event, read-only) |
-| `PACKAGE_USAGE_STATS` | Last-opened app context (special app op, opt-in) |
-| `BIND_NOTIFICATION_LISTENER_SERVICE` | Notification Air-Gap quarantine (opt-in) |
 | `INTERNET` | BYOK AI endpoints & Wallhaven only — user-initiated |
 | `VIBRATE` | Haptic feedback for friction pacing and UI triggers |
 | `POST_NOTIFICATIONS` | Android 13+ timer/flowmodoro alerts |
@@ -129,9 +125,8 @@ app/
 1. Install the APK — sideload `app-release.apk` or build from source
 2. Go to **Settings → Default apps → Home app → a-Ha**
 3. Optional: **Settings → Special app access → Usage access → a-Ha** (for Last Opened bar)
-4. Optional: **Settings → Special app access → Notification access → a-Ha** (for Notification Air-Gap)
-5. On first launch, complete the interactive onboarding walkthrough
-6. Add your AI API key in **SETTINGS → BYOK KEYS** to unlock task decomposition
+4. On first launch, complete the interactive onboarding walkthrough
+5. Add your AI API key in **SETTINGS → BYOK KEYS** to unlock task decomposition
 
 ### Build from source
 
