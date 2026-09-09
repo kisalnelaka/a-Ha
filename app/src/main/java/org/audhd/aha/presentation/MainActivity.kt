@@ -344,7 +344,8 @@ fun LauncherRoot(
                     dailyAnchorRepository = dailyAnchorRepository,
                     onToggleNoise = {
                         val next = when (currentNoise) {
-                            null -> NoiseType.BROWN
+                            null -> NoiseType.RAIN
+                            NoiseType.RAIN -> NoiseType.BROWN
                             NoiseType.BROWN -> NoiseType.PINK
                             NoiseType.PINK -> NoiseType.WHITE
                             NoiseType.WHITE -> null
