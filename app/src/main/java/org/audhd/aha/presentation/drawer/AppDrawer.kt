@@ -109,18 +109,48 @@ fun AppDrawer(
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = BorderSubtle, thickness = 1.dp)
 
-        // Text-Only App List
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(
-                items = apps,
-                key = { it.packageName + "/" + it.activityName }
-            ) { app ->
-                AppDrawerItem(
-                    app = app,
-                    onClick = { onAppClick(app) }
-                )
+        if (apps.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 60.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = if (searchQuery.isNotEmpty()) "No apps found for \"$searchQuery\"" else "No applications loaded yet",
+                        color = TextMuted,
+                        fontSize = 15.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (searchQuery.isNotEmpty()) {
+                        Text(
+                            text = "[ Clear Search ]".toFixationPoint(),
+                            color = TextPrimary,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .clickable { onSearchQueryChange("") }
+                                .background(SurfaceCharcoal, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+            // Text-Only App List
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(
+                    items = apps,
+                    key = { it.packageName + "/" + it.activityName }
+                ) { app ->
+                    AppDrawerItem(
+                        app = app,
+                        onClick = { onAppClick(app) }
+                    )
+                }
             }
         }
     }

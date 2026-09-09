@@ -47,32 +47,66 @@ class AppRepository(private val context: Context? = null) {
      */
     suspend fun refreshApps(): List<AppInfo> = withContext(Dispatchers.IO) {
         val apps = mutableListOf<AppInfo>()
-        val currentLauncher = launcherApps ?: return@withContext emptyList()
+        val currentLauncher = launcherApps
         val users = userManager?.userProfiles ?: listOf(Process.myUserHandle())
 
-        for (user in users) {
-            val activities: List<LauncherActivityInfo> = try {
-                currentLauncher.getActivityList(null, user)
+        if (currentLauncher != null) {
+            for (user in users) {
+                val activities: List<LauncherActivityInfo> = try {
+                    currentLauncher.getActivityList(null, user)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                for (activity in activities) {
+                    if (activity.applicationInfo.packageName == context?.packageName) {
+                        continue
+                    }
+
+                    val label = activity.label?.toString() ?: activity.applicationInfo.packageName
+                    val pkgName = activity.applicationInfo.packageName
+                    val activityName = activity.componentName.className
+
+                    apps.add(
+                        AppInfo(
+                            label = label,
+                            packageName = pkgName,
+                            activityName = activityName,
+                            userHandle = user,
+                            isDistractionApp = defaultDistractionPackages.contains(pkgName)
+                        )
+                    )
+                }
+            }
+        }
+
+        // Fallback to PackageManager query if LauncherApps returned nothing (common on non-default launcher state)
+        if (apps.isEmpty() && context != null) {
+            val pm = context.packageManager
+            val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+            }
+            val resolveInfos = try {
+                pm.queryIntentActivities(mainIntent, 0)
             } catch (e: Exception) {
                 emptyList()
             }
-
-            for (activity in activities) {
-                // Ignore self from the launcher list
-                if (activity.applicationInfo.packageName == context?.packageName) {
-                    continue
+            val defaultUser = Process.myUserHandle()
+            for (resolveInfo in resolveInfos) {
+                val pkgName = resolveInfo.activityInfo.packageName
+                if (pkgName == context.packageName) continue
+                val label = try {
+                    resolveInfo.loadLabel(pm).toString()
+                } catch (e: Exception) {
+                    pkgName
                 }
-
-                val label = activity.label?.toString() ?: activity.applicationInfo.packageName
-                val pkgName = activity.applicationInfo.packageName
-                val activityName = activity.componentName.className
-
+                val activityName = resolveInfo.activityInfo.name
                 apps.add(
                     AppInfo(
                         label = label,
                         packageName = pkgName,
                         activityName = activityName,
-                        userHandle = user,
+                        userHandle = defaultUser,
                         isDistractionApp = defaultDistractionPackages.contains(pkgName)
                     )
                 )
