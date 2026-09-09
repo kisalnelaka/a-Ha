@@ -1,6 +1,7 @@
 package org.audhd.aha.presentation.desk
 
 import android.app.Activity
+import android.content.Intent
 import android.view.HapticFeedbackConstants
 import android.view.WindowManager
 import androidx.compose.foundation.background
@@ -139,7 +140,13 @@ fun DeskWidget(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column {
+                // Clickable Clock & Date (Tap to enter StandBy Desk Mode)
+                Column(
+                    modifier = Modifier.clickable {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                        context.startActivity(Intent(context, DeskModeActivity::class.java))
+                    }
+                ) {
                     Text(
                         text = if (currentTimeString.isEmpty()) "--:--" else currentTimeString,
                         fontSize = 48.sp,
@@ -212,7 +219,7 @@ fun DeskWidget(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f, fill = false)) {
                             Text(
                                 text = "FLOW TIMER".toFixationPoint(),
                                 fontSize = 12.sp,
@@ -222,12 +229,15 @@ fun DeskWidget(
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "Continuous count-up • 1:5 recovery",
+                                text = "Count-up • 1:5 recovery",
                                 fontSize = 11.sp,
                                 color = TextMuted,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1
                             )
                         }
+
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         Box(
                             modifier = Modifier
@@ -245,7 +255,9 @@ fun DeskWidget(
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary,
                                 fontFamily = FontFamily.Monospace,
-                                letterSpacing = 0.5.sp
+                                letterSpacing = 0.5.sp,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }

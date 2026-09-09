@@ -45,11 +45,14 @@ class TaskDecomposerEngine(
         private const val TAG = "TaskDecomposer"
 
         const val SYSTEM_PROMPT =
-            "You are an AuDHD executive functioning assistant. Your job is to defeat task paralysis. " +
-            "Decompose the user's task into 3 to 5 ridiculously small, concrete, low-friction micro-actions. " +
-            "Start each action with an unambiguous physical verb (e.g., 'Open', 'Find', 'Write', 'Put', 'Close'). " +
-            "Avoid high cognitive load, vague advice, or planning. " +
-            "Respond ONLY with a JSON array of strings, for example: [\"Step 1\", \"Step 2\", \"Step 3\"]."
+            "You are an AuDHD executive dysfunction task decomposer ('Goblin Mode'). " +
+            "Your single mission is to destroy task paralysis for the user. " +
+            "Decompose the given task into 3 to 5 ridiculously small, concrete, zero-friction physical micro-actions. " +
+            "RULES:\n" +
+            "1. Every single action MUST start with an unambiguous physical action verb (e.g. 'Open', 'Stand up and get', 'Put', 'Type', 'Click', 'Close').\n" +
+            "2. Absolutely NO vague, cognitive, or planning advice (NEVER say 'Plan', 'Decide', 'Think about', 'Brainstorm').\n" +
+            "3. Keep each step under 8 words. Maximum clarity, zero cognitive load.\n" +
+            "4. Respond ONLY with a valid JSON array of strings. Do not include markdown ticks, explanation, or conversational filler. Example: [\"Open laptop\", \"Navigate to website\", \"Click log in\"]"
 
         fun computeHash(text: String): String {
             val normalized = text.trim().lowercase()
@@ -209,6 +212,18 @@ class TaskDecomposerEngine(
         val candidateProviders = mutableListOf(activeProvider)
         AIProvider.values().forEach { if (it != activeProvider) candidateProviders.add(it) }
 
+        val hasConfiguredKey = candidateProviders.any { !keystoreManager?.getApiKey(it).isNullOrBlank() }
+
+        // Tier 1: Cache verification (ONLY when no API key is configured)
+        // If an API key is set, we bypass stale generic heuristic cache to fetch live AI micro-actions!
+        if (!bypassCache && !hasConfiguredKey) {
+            taskDao?.findCachedDecomposition(hash)?.let { cached ->
+                val parsed = parseJsonSteps(cached.subStepsJson)
+                if (parsed.isNotEmpty()) return@withContext parsed
+            }
+        }
+
+        // Tier 2: BYOK AI Inference with Multi-Provider Fallback
         for (provider in candidateProviders) {
             val apiKey = keystoreManager?.getApiKey(provider)
             if (!apiKey.isNullOrBlank()) {
@@ -224,7 +239,15 @@ class TaskDecomposerEngine(
             }
         }
 
-        // Tier 3: Domain-Aware Offline Heuristic Engine
+        // Tier 3: Check cache if AI call failed or timed out
+        if (!bypassCache) {
+            taskDao?.findCachedDecomposition(hash)?.let { cached ->
+                val parsed = parseJsonSteps(cached.subStepsJson)
+                if (parsed.isNotEmpty()) return@withContext parsed
+            }
+        }
+
+        // Tier 4: Domain-Aware Offline Heuristic Engine
         SafeLog.i(TAG, "Using offline domain heuristics for '$cleanTitle'")
         generateOfflineMicroSteps(cleanTitle)
     }
@@ -255,7 +278,7 @@ class TaskDecomposerEngine(
                 val url = "https://api.groq.com/openai/v1/chat/completions"
                 val body = JSONObject().apply {
                     put("model", provider.defaultModel)
-                    put("temperature", 0.2)
+                    put("temperature", 0.1)
                     put("messages", JSONArray().apply {
                         put(JSONObject().apply {
                             put("role", "system")
@@ -273,7 +296,7 @@ class TaskDecomposerEngine(
                 val url = "https://openrouter.ai/api/v1/chat/completions"
                 val body = JSONObject().apply {
                     put("model", provider.defaultModel)
-                    put("temperature", 0.2)
+                    put("temperature", 0.1)
                     put("messages", JSONArray().apply {
                         put(JSONObject().apply {
                             put("role", "system")
@@ -298,6 +321,10 @@ class TaskDecomposerEngine(
                                 })
                             })
                         })
+                    })
+                    put("generationConfig", JSONObject().apply {
+                        put("response_mime_type", "application/json")
+                        put("temperature", 0.1)
                     })
                 }.toString()
                 Pair(url, body)

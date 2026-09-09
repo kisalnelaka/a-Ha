@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import kotlinx.coroutines.Dispatchers
@@ -79,6 +80,18 @@ open class WallpaperRepository(private val context: Context? = null) {
                 title = "Pure AMOLED Deep Black",
                 isProcedural = true,
                 proceduralType = ProceduralWallpaperType.PURE_AMOLED_BLACK
+            ),
+            WallpaperItem(
+                id = "proc_matrix_rain",
+                title = "Matrix Phosphor Stream",
+                isProcedural = true,
+                proceduralType = ProceduralWallpaperType.MATRIX_RAIN
+            ),
+            WallpaperItem(
+                id = "proc_matrix_grid",
+                title = "Cyberpunk Tactical Grid",
+                isProcedural = true,
+                proceduralType = ProceduralWallpaperType.MATRIX_GRID
             ),
             WallpaperItem(
                 id = "proc_twilight",
@@ -276,6 +289,71 @@ open class WallpaperRepository(private val context: Context? = null) {
         when (type) {
             ProceduralWallpaperType.PURE_AMOLED_BLACK -> {
                 canvas.drawColor(Color.BLACK)
+            }
+            ProceduralWallpaperType.MATRIX_RAIN -> {
+                canvas.drawColor(Color.BLACK)
+                paint.typeface = Typeface.MONOSPACE
+                paint.isAntiAlias = true
+                val glyphs = "0123456789ABCDEF:;><+-*/=~_XYZ"
+                val colWidth = 32f
+                val fontSize = 24f
+                paint.textSize = fontSize
+                val numCols = (width / colWidth).toInt()
+                val random = Random(1337)
+
+                for (c in 0..numCols) {
+                    val x = c * colWidth + 4f
+                    val dropLength = random.nextInt(14) + 8
+                    val startRow = random.nextInt(maxOf(1, height / fontSize.toInt()))
+                    for (step in 0 until dropLength) {
+                        val y = (startRow + step) * fontSize
+                        if (y > height + fontSize) continue
+                        val char = glyphs[random.nextInt(glyphs.length)]
+
+                        when {
+                            step == dropLength - 1 -> paint.color = Color.rgb(190, 255, 200) // Phosphor head
+                            step >= dropLength - 3 -> paint.color = Color.rgb(55, 185, 75)   // Mid green
+                            step >= dropLength - 6 -> paint.color = Color.rgb(20, 80, 30)    // Dim green
+                            else -> paint.color = Color.rgb(8, 30, 12)                       // Faint trail
+                        }
+                        canvas.drawText(char.toString(), x, y, paint)
+                    }
+                }
+            }
+            ProceduralWallpaperType.MATRIX_GRID -> {
+                canvas.drawColor(Color.BLACK)
+                paint.isAntiAlias = true
+                paint.color = Color.rgb(12, 28, 16)
+                paint.strokeWidth = 1f
+
+                val gridStep = 48f
+                var x = 0f
+                while (x <= width) {
+                    canvas.drawLine(x, 0f, x, height.toFloat(), paint)
+                    x += gridStep
+                }
+                var y = 0f
+                while (y <= height) {
+                    canvas.drawLine(0f, y, width.toFloat(), y, paint)
+                    y += gridStep
+                }
+
+                // Cyberpunk tactical crosshairs and coordinate markers
+                val random = Random(2049)
+                paint.typeface = Typeface.MONOSPACE
+                paint.textSize = 18f
+                val maxCols = maxOf(1, (width / gridStep).toInt())
+                val maxRows = maxOf(1, (height / gridStep).toInt())
+                for (i in 0 until 40) {
+                    val cx = (random.nextInt(maxCols)) * gridStep
+                    val cy = (random.nextInt(maxRows)) * gridStep
+                    paint.color = Color.rgb(35, 90, 45)
+                    canvas.drawText("+", cx - 5f, cy + 6f, paint)
+                    if (i % 4 == 0) {
+                        paint.color = Color.rgb(25, 60, 30)
+                        canvas.drawText("0x%02X".format(i), cx + 8f, cy + 18f, paint)
+                    }
+                }
             }
             ProceduralWallpaperType.TWILIGHT_GRADIENT -> {
                 val shader = LinearGradient(

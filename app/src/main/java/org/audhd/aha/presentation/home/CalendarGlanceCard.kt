@@ -87,8 +87,8 @@ fun CalendarGlanceCard(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
-            .border(1.dp, Color(0xFF1E2A3A), RoundedCornerShape(8.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .border(1.dp, Color(0xFF1E2836), RoundedCornerShape(8.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         if (!permissionGranted) {
             // Tap to grant

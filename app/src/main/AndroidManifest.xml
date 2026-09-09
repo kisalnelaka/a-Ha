@@ -69,6 +69,13 @@
             android:exported="false"
             android:theme="@style/Theme.AHa" />
 
+        <!-- StandBy Desk Mode Dedicated Fullscreen Activity -->
+        <activity
+            android:name=".presentation.desk.DeskModeActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout"
+            android:theme="@style/Theme.AHa" />
+
         <!-- Landscape Charging StandBy Screensaver -->
         <service
             android:name=".presentation.desk.DeskModeDreamService"

@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -55,6 +56,7 @@ import org.audhd.aha.data.security.AIProvider
 import org.audhd.aha.data.security.KeystoreManager
 import org.audhd.aha.domain.decomposer.TaskDecomposerEngine
 import org.audhd.aha.domain.typography.toFixationPoint
+import org.audhd.aha.presentation.desk.DeskModeActivity
 import org.audhd.aha.presentation.theme.BorderSubtle
 import org.audhd.aha.presentation.theme.PureBlack
 import org.audhd.aha.presentation.theme.SurfaceCharcoal
@@ -262,15 +264,17 @@ fun SettingsSheet(
                                             currentKey = keystoreManager.getApiKey(provider) ?: ""
                                             saveMessage = null
                                         }
-                                        .padding(vertical = 10.dp),
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = provider.displayName,
-                                        fontSize = 11.sp,
+                                        fontSize = 10.5.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                         color = if (isSelected) TextPrimary else TextMuted,
-                                        fontFamily = FontFamily.Monospace
+                                        fontFamily = FontFamily.Monospace,
+                                        maxLines = 1,
+                                        textAlign = TextAlign.Center
                                     )
                                 }
                             }
@@ -327,80 +331,100 @@ fun SettingsSheet(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
+                        // Controls Row 1: Key Visibility & Clear
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (isKeyVisible) "Hide Key" else "Show Key",
-                                fontSize = 12.sp,
+                                text = if (isKeyVisible) "[ Hide Key ]" else "[ Show Key ]",
+                                fontSize = 11.sp,
                                 color = TextMuted,
                                 fontFamily = FontFamily.Monospace,
                                 modifier = Modifier
                                     .clickable { isKeyVisible = !isKeyVisible }
-                                    .padding(4.dp)
+                                    .padding(vertical = 4.dp)
                             )
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (currentKey.isNotEmpty()) {
-                                    Button(
-                                        onClick = {
+                            if (currentKey.isNotEmpty()) {
+                                Text(
+                                    text = "[ Clear Key ]",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFDD8888),
+                                    fontFamily = FontFamily.Monospace,
+                                    modifier = Modifier
+                                        .clickable {
                                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                             keystoreManager.clearApiKey(selectedProvider)
                                             currentKey = ""
                                             saveMessage = "Key cleared"
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF221616),
-                                            contentColor = Color(0xFFDD8888)
-                                        ),
-                                        shape = RoundedCornerShape(4.dp)
-                                    ) {
-                                        Text("Clear", fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                                    }
-                                }
-
-                                Button(
-                                    onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                        keystoreManager.setApiKey(selectedProvider, currentKey)
-                                        keystoreManager.setSelectedProvider(selectedProvider)
-                                        coroutineScope.launch {
-                                            saveMessage = "Testing ${selectedProvider.displayName}..."
-                                            val result = TaskDecomposerEngine(keystoreManager = keystoreManager)
-                                                .testConnection(selectedProvider, currentKey)
-                                            saveMessage = if (result.isSuccess) {
-                                                "[ VALID ] ${result.getOrNull()}"
-                                            } else {
-                                                "[ FAILED ] ${result.exceptionOrNull()?.message}"
-                                            }
                                         }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF1B261B),
-                                        contentColor = Color(0xFF88DD88)
-                                    ),
-                                    shape = RoundedCornerShape(4.dp)
-                                ) {
-                                    Text("Test Key", fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                                }
+                                        .padding(vertical = 4.dp)
+                                )
+                            }
+                        }
 
-                                Button(
-                                    onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                        keystoreManager.setApiKey(selectedProvider, currentKey)
-                                        keystoreManager.setSelectedProvider(selectedProvider)
-                                        saveMessage = "${selectedProvider.displayName} key saved securely as active"
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF2A3A2A),
-                                        contentColor = Color(0xFFFFFFFF)
-                                    ),
-                                    shape = RoundedCornerShape(4.dp)
-                                ) {
-                                    Text("Save Key", fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                                }
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Controls Row 2: Action Buttons (Equal 50/50 Width)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    keystoreManager.setApiKey(selectedProvider, currentKey)
+                                    keystoreManager.setSelectedProvider(selectedProvider)
+                                    coroutineScope.launch {
+                                        saveMessage = "Testing ${selectedProvider.displayName}..."
+                                        val result = TaskDecomposerEngine(keystoreManager = keystoreManager)
+                                            .testConnection(selectedProvider, currentKey)
+                                        saveMessage = if (result.isSuccess) {
+                                            "[ VALID ] ${result.getOrNull()}"
+                                        } else {
+                                            "[ FAILED ] ${result.exceptionOrNull()?.message}"
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF1B261B),
+                                    contentColor = Color(0xFF88DD88)
+                                ),
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "Test Key",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    maxLines = 1
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    keystoreManager.setApiKey(selectedProvider, currentKey)
+                                    keystoreManager.setSelectedProvider(selectedProvider)
+                                    saveMessage = "${selectedProvider.displayName} key saved securely"
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF2A3A2A),
+                                    contentColor = Color(0xFFFFFFFF)
+                                ),
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "Save Key",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    maxLines = 1
+                                )
                             }
                         }
 
@@ -412,6 +436,92 @@ fun SettingsSheet(
                                 color = if (saveMessage?.startsWith("[ FAILED ]") == true) Color(0xFFDD8888) else Color(0xFF88CC88),
                                 fontFamily = FontFamily.Monospace
                             )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // StandBy Desk Mode Section
+                Text(
+                    text = "STANDBY & DESK MODE".toFixationPoint(),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF999977),
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Persistent landscape charging display with Flowmodoro sprint counter, circadian night filter, and OLED burn-in pixel shift.",
+                            fontSize = 12.sp,
+                            color = TextMuted,
+                            lineHeight = 18.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    onDismiss()
+                                    context.startActivity(Intent(context, DeskModeActivity::class.java))
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF222822),
+                                    contentColor = Color(0xFF88DD88)
+                                ),
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "Start StandBy",
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    maxLines = 1
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    try {
+                                        context.startActivity(Intent(Settings.ACTION_DREAM_SETTINGS).apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        })
+                                    } catch (_: Exception) {
+                                        context.startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS).apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        })
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF222222),
+                                    contentColor = Color(0xFFCCCCCC)
+                                ),
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "Screen Saver",
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }

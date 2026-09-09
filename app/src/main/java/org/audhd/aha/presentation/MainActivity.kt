@@ -562,9 +562,7 @@ fun LauncherHomeScreen(
             // Calendar Glance — next event within 24h
             CalendarGlanceCard(modifier = Modifier.fillMaxWidth())
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Last opened context bar
+            // Last opened context bar (manages its own padding only when data exists)
             LastOpenedBar()
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -572,12 +570,12 @@ fun LauncherHomeScreen(
             // Persistent Desk & Flowmodoro Widget
             DeskWidget(modifier = Modifier.fillMaxWidth())
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // 3 Scaffolding Action Modules
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Quests Card
                 Box(
@@ -589,7 +587,7 @@ fun LauncherHomeScreen(
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onOpenQuestBoard()
                         }
-                        .padding(14.dp)
+                        .padding(12.dp)
                 ) {
                     Column {
                         Text(
@@ -598,20 +596,23 @@ fun LauncherHomeScreen(
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary,
                             fontFamily = FontFamily.Monospace,
-                            letterSpacing = 1.sp
+                            letterSpacing = 1.sp,
+                            maxLines = 1
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (activeTaskCount == 0) "All clear" else "$activeTaskCount active",
                             fontSize = 11.sp,
                             color = if (activeTaskCount > 0) Color(0xFF88DD88) else TextMuted,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1
                         )
                         Text(
                             text = "Max 3 tasks",
                             fontSize = 9.sp,
                             color = TextMuted,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1
                         )
                     }
                 }
@@ -626,7 +627,7 @@ fun LauncherHomeScreen(
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onOpenScratchpad()
                         }
-                        .padding(14.dp)
+                        .padding(12.dp)
                 ) {
                     Column {
                         Text(
@@ -635,20 +636,23 @@ fun LauncherHomeScreen(
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary,
                             fontFamily = FontFamily.Monospace,
-                            letterSpacing = 1.sp
+                            letterSpacing = 1.sp,
+                            maxLines = 1
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Working memory",
+                            text = "Fast note",
                             fontSize = 11.sp,
                             color = TextSecondary,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1
                         )
                         Text(
                             text = "Swipe down",
                             fontSize = 9.sp,
                             color = TextMuted,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1
                         )
                     }
                 }
@@ -663,7 +667,7 @@ fun LauncherHomeScreen(
                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                             onOpenWallpaperPicker()
                         }
-                        .padding(14.dp)
+                        .padding(12.dp)
                 ) {
                     Column {
                         Text(
@@ -672,20 +676,23 @@ fun LauncherHomeScreen(
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary,
                             fontFamily = FontFamily.Monospace,
-                            letterSpacing = 1.sp
+                            letterSpacing = 1.sp,
+                            maxLines = 1
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Wallpapers",
                             fontSize = 11.sp,
                             color = TextSecondary,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1
                         )
                         Text(
-                            text = "Dark minimal",
+                            text = "Custom / Dark",
                             fontSize = 9.sp,
                             color = TextMuted,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1
                         )
                     }
                 }

@@ -12,10 +12,12 @@ class WallpaperRepositoryTest {
 
 
     @Test
-    fun getProceduralPresets_containsFourEssentialDarkModes() {
+    fun getProceduralPresets_containsEssentialDarkModesAndMatrix() {
         val presets = repository.getProceduralPresets()
-        assertEquals(4, presets.size)
+        assertEquals(6, presets.size)
         assertTrue(presets.any { it.proceduralType == ProceduralWallpaperType.PURE_AMOLED_BLACK })
+        assertTrue(presets.any { it.proceduralType == ProceduralWallpaperType.MATRIX_RAIN })
+        assertTrue(presets.any { it.proceduralType == ProceduralWallpaperType.MATRIX_GRID })
         assertTrue(presets.any { it.proceduralType == ProceduralWallpaperType.TWILIGHT_GRADIENT })
         assertTrue(presets.any { it.proceduralType == ProceduralWallpaperType.OBSIDIAN_DITHER })
         assertTrue(presets.any { it.proceduralType == ProceduralWallpaperType.MONOCHROME_HORIZON })

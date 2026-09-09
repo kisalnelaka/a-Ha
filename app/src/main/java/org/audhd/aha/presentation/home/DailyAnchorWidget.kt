@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -84,20 +85,33 @@ fun DailyAnchorWidget(
             .background(SurfaceCharcoal, RoundedCornerShape(8.dp))
             .border(
                 1.dp,
-                if (anchor.isNotBlank()) Color(0xFF2A3A2A) else BorderSubtle,
+                if (anchor.isNotBlank()) Color(0xFF335533) else Color(0xFF242C24),
                 RoundedCornerShape(8.dp)
             )
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Column {
-            Text(
-                text = "TODAY'S ANCHOR",
-                fontSize = 9.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextMuted,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.2.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "TODAY'S ANCHOR",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (anchor.isNotBlank()) Color(0xFF88BB88) else TextMuted,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.2.sp
+                )
+                Text(
+                    text = if (anchor.isNotBlank()) "[ ANCHORED ]" else "[ NO ANCHOR ]",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (anchor.isNotBlank()) Color(0xFF88DD88) else Color(0xFF444444),
+                    fontFamily = FontFamily.Monospace
+                )
+            }
             Spacer(modifier = Modifier.height(6.dp))
 
             if (editing) {
