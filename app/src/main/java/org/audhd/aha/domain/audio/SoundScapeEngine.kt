@@ -13,6 +13,8 @@ import kotlin.math.sin
 
 enum class NoiseType(val displayName: String) {
     RAIN("Rainfall (Acoustic Patter)"),
+    BINAURAL_GAMMA("40Hz Gamma (Deep Hyperfocus)"),
+    BINAURAL_BETA("14Hz Beta (Alert State)"),
     BROWN("Brown Noise (Deep Ground)"),
     PINK("Pink Noise (Focus Mask)"),
     WHITE("White Noise (High Contrast)")
@@ -20,13 +22,15 @@ enum class NoiseType(val displayName: String) {
 
 /**
  * Pure mathematical DSP real-time noise & ambient generator streaming directly into AudioTrack.
+ * Stereo output: enables true binaural phase entrainment (40Hz Gamma & 14Hz Beta) alongside acoustic noise.
  * Zero asset dependencies: no MP3/WAV files, zero APK bloat, infinite duration, zero looping seams.
  */
 class SoundScapeEngine {
 
     companion object {
         const val SAMPLE_RATE = 44100
-        const val BUFFER_CHUNK_SIZE = 4096
+        const val BUFFER_CHUNK_SIZE = 4096 // 2048 stereo frames (2 shorts/frame)
+        private const val TWO_PI = 6.283185307179586f
     }
 
     private var audioTrack: AudioTrack? = null
@@ -57,7 +61,7 @@ class SoundScapeEngine {
 
         val minBufferSize = AudioTrack.getMinBufferSize(
             SAMPLE_RATE,
-            AudioFormat.CHANNEL_OUT_MONO,
+            AudioFormat.CHANNEL_OUT_STEREO,
             AudioFormat.ENCODING_PCM_16BIT
         )
         val bufferSize = maxOf(minBufferSize, BUFFER_CHUNK_SIZE * 2)
@@ -73,7 +77,7 @@ class SoundScapeEngine {
                 AudioFormat.Builder()
                     .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                     .setSampleRate(SAMPLE_RATE)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
                     .build()
             )
             .setBufferSizeInBytes(bufferSize)
@@ -107,7 +111,7 @@ class SoundScapeEngine {
     private suspend fun streamAudioLoop() {
         val pcmBuffer = ShortArray(BUFFER_CHUNK_SIZE)
 
-        // DSP state variables
+        // DSP state variables for filters
         var brownLastOutput = 0.0f
         var b0 = 0.0f
         var b1 = 0.0f
@@ -127,21 +131,33 @@ class SoundScapeEngine {
         var drop2Freq = 0.0f
         var drop2Phase = 0.0f
 
+        // Binaural Phase Oscillators
+        var binauralLeftPhase = 0.0f
+        var binauralRightPhase = 0.0f
+
         while (isPlaying && kotlinx.coroutines.currentCoroutineContext().isActive) {
             val type = currentNoiseType
 
-            for (i in 0 until BUFFER_CHUNK_SIZE) {
+            var i = 0
+            while (i < BUFFER_CHUNK_SIZE) {
                 val white = (random.nextFloat() * 2.0f) - 1.0f
 
-                val sample = when (type) {
-                    NoiseType.WHITE -> white * 0.4f
+                var leftSample: Float
+                var rightSample: Float
+
+                when (type) {
+                    NoiseType.WHITE -> {
+                        val mono = white * 0.35f
+                        leftSample = mono
+                        rightSample = mono
+                    }
                     NoiseType.BROWN -> {
-                        // Leaky integrator 1/f^2 Brownian noise
                         brownLastOutput = (brownLastOutput + (0.02f * white)) / 1.02f
-                        (brownLastOutput * 3.5f).coerceIn(-1.0f, 1.0f)
+                        val mono = (brownLastOutput * 3.5f).coerceIn(-1.0f, 1.0f)
+                        leftSample = mono
+                        rightSample = mono
                     }
                     NoiseType.PINK -> {
-                        // Paul Kellet's refined 1/f filter approximation
                         b0 = 0.99886f * b0 + white * 0.0555179f
                         b1 = 0.99332f * b1 + white * 0.0750759f
                         b2 = 0.96900f * b2 + white * 0.1538520f
@@ -150,10 +166,11 @@ class SoundScapeEngine {
                         b5 = -0.7616f * b5 - white * 0.0168980f
                         val pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362f
                         b6 = white * 0.115926f
-                        (pink * 0.11f).coerceIn(-1.0f, 1.0f)
+                        val mono = (pink * 0.11f).coerceIn(-1.0f, 1.0f)
+                        leftSample = mono
+                        rightSample = mono
                     }
                     NoiseType.RAIN -> {
-                        // Background rain wash: 2-pole low-pass filtered mix of pink & brown noise
                         brownLastOutput = (brownLastOutput + (0.02f * white)) / 1.02f
                         val brownSample = (brownLastOutput * 3.5f).coerceIn(-1.0f, 1.0f)
 
@@ -165,43 +182,80 @@ class SoundScapeEngine {
 
                         rainWash = rainWash * 0.92f + (pinkSample * 0.5f + brownSample * 0.5f) * 0.08f
 
-                        // Naturalistic slow gust undulation (~0.25 Hz)
                         gustPhase += 0.00004f
-                        if (gustPhase > 6.2831855f) gustPhase -= 6.2831855f
+                        if (gustPhase > TWO_PI) gustPhase -= TWO_PI
                         val gust = 0.8f + 0.2f * sin(gustPhase)
 
-                        // Droplet voice 1 (acoustic raindrop on hard surface)
                         if (drop1Amp < 0.01f && random.nextFloat() < 0.0018f) {
                             drop1Amp = 0.35f + random.nextFloat() * 0.35f
-                            drop1Freq = (1200f + random.nextFloat() * 1600f) * (6.2831855f / SAMPLE_RATE)
+                            drop1Freq = (1200f + random.nextFloat() * 1600f) * (TWO_PI / SAMPLE_RATE)
                             drop1Phase = 0f
                         }
                         var drop1Sample = 0f
                         if (drop1Amp >= 0.01f) {
                             drop1Phase += drop1Freq
                             drop1Sample = sin(drop1Phase) * drop1Amp
-                            drop1Amp *= 0.994f // Exponential decay
+                            drop1Amp *= 0.994f
                         }
 
-                        // Droplet voice 2 (lighter patter)
                         if (drop2Amp < 0.01f && random.nextFloat() < 0.0012f) {
                             drop2Amp = 0.25f + random.nextFloat() * 0.3f
-                            drop2Freq = (1600f + random.nextFloat() * 1800f) * (6.2831855f / SAMPLE_RATE)
+                            drop2Freq = (1600f + random.nextFloat() * 1800f) * (TWO_PI / SAMPLE_RATE)
                             drop2Phase = 0f
                         }
                         var drop2Sample = 0f
                         if (drop2Amp >= 0.01f) {
                             drop2Phase += drop2Freq
                             drop2Sample = sin(drop2Phase) * drop2Amp
-                            drop2Amp *= 0.992f // Exponential decay
+                            drop2Amp *= 0.992f
                         }
 
                         val rain = (rainWash * gust * 1.8f) + (drop1Sample * 0.4f) + (drop2Sample * 0.3f)
-                        rain.coerceIn(-1.0f, 1.0f)
+                        val mono = rain.coerceIn(-1.0f, 1.0f)
+                        leftSample = mono
+                        rightSample = mono
+                    }
+                    NoiseType.BINAURAL_GAMMA -> {
+                        // 40Hz Gamma Focus Beat: Left = 200Hz, Right = 240Hz
+                        val leftInc = 200.0f * (TWO_PI / SAMPLE_RATE)
+                        val rightInc = 240.0f * (TWO_PI / SAMPLE_RATE)
+
+                        binauralLeftPhase += leftInc
+                        if (binauralLeftPhase > TWO_PI) binauralLeftPhase -= TWO_PI
+
+                        binauralRightPhase += rightInc
+                        if (binauralRightPhase > TWO_PI) binauralRightPhase -= TWO_PI
+
+                        // Subtle pink bed floor for acoustic warmth
+                        b0 = 0.99886f * b0 + white * 0.0555179f
+                        val pinkBed = (b0 * 0.04f).coerceIn(-0.08f, 0.08f)
+
+                        leftSample = (sin(binauralLeftPhase) * 0.28f + pinkBed).coerceIn(-1.0f, 1.0f)
+                        rightSample = (sin(binauralRightPhase) * 0.28f + pinkBed).coerceIn(-1.0f, 1.0f)
+                    }
+                    NoiseType.BINAURAL_BETA -> {
+                        // 14Hz Beta Alert Beat: Left = 200Hz, Right = 214Hz
+                        val leftInc = 200.0f * (TWO_PI / SAMPLE_RATE)
+                        val rightInc = 214.0f * (TWO_PI / SAMPLE_RATE)
+
+                        binauralLeftPhase += leftInc
+                        if (binauralLeftPhase > TWO_PI) binauralLeftPhase -= TWO_PI
+
+                        binauralRightPhase += rightInc
+                        if (binauralRightPhase > TWO_PI) binauralRightPhase -= TWO_PI
+
+                        // Subtle pink bed floor for acoustic warmth
+                        b0 = 0.99886f * b0 + white * 0.0555179f
+                        val pinkBed = (b0 * 0.04f).coerceIn(-0.08f, 0.08f)
+
+                        leftSample = (sin(binauralLeftPhase) * 0.28f + pinkBed).coerceIn(-1.0f, 1.0f)
+                        rightSample = (sin(binauralRightPhase) * 0.28f + pinkBed).coerceIn(-1.0f, 1.0f)
                     }
                 }
 
-                pcmBuffer[i] = (sample * 32767.0f).toInt().toShort()
+                pcmBuffer[i] = (leftSample * 32767.0f).toInt().toShort()
+                pcmBuffer[i + 1] = (rightSample * 32767.0f).toInt().toShort()
+                i += 2
             }
 
             audioTrack?.write(pcmBuffer, 0, BUFFER_CHUNK_SIZE)

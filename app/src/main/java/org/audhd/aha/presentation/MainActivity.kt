@@ -81,12 +81,20 @@ import org.audhd.aha.presentation.wallpaper.WallpaperPickerSheet
 import org.audhd.aha.data.repository.DailyAnchorRepository
 import org.audhd.aha.data.repository.HiddenAppsRepository
 import org.audhd.aha.data.repository.FrictionRepository
+import org.audhd.aha.data.repository.QuarantineRepository
 import org.audhd.aha.presentation.home.DailyAnchorWidget
 import org.audhd.aha.presentation.home.CalendarGlanceCard
 import org.audhd.aha.presentation.home.LastOpenedBar
+import org.audhd.aha.presentation.components.QuarantineDigestCard
+import org.audhd.aha.presentation.components.DayProgressRuler
+import org.audhd.aha.presentation.omnibar.OmnibarWidget
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableIntStateOf
+import android.app.Activity
+import android.view.WindowManager
 
 /**
  * Root Launcher Activity orchestrating the AuDHD executive functioning interface.
@@ -210,6 +218,19 @@ fun LauncherRoot(
     var isLowSpoonMode by remember { mutableStateOf(false) }
     var currentNoise by remember { mutableStateOf<NoiseType?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    val quarantineRepository = remember { QuarantineRepository.getInstance(context) }
+    var isBlackoutMode by remember { mutableStateOf(false) }
+
+    val activity = context as? Activity
+    LaunchedEffect(isBlackoutMode) {
+        activity?.window?.attributes = activity?.window?.attributes?.apply {
+            screenBrightness = if (isBlackoutMode) 0.01f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        }
+        if (isBlackoutMode) {
+            soundScapeEngine.stop()
+            currentNoise = null
+        }
+    }
 
     // Circadian / Hyperfocus Continuous Session Guardrail
     val continuousDuration = remember { screenTimeTintController.getContinuousSessionDurationMs() }
@@ -221,8 +242,9 @@ fun LauncherRoot(
         appRepository.refreshApps()
     }
 
-    BackHandler(enabled = isDrawerOpen || isScratchpadOpen || isQuestBoardOpen || isWallpaperPickerOpen || isOnboardingOpen || isSettingsOpen) {
+    BackHandler(enabled = isBlackoutMode || isDrawerOpen || isScratchpadOpen || isQuestBoardOpen || isWallpaperPickerOpen || isOnboardingOpen || isSettingsOpen) {
         when {
+            isBlackoutMode -> isBlackoutMode = false
             isSettingsOpen -> isSettingsOpen = false
             isOnboardingOpen -> {
                 prefs.edit().putBoolean("has_completed_onboarding", true).apply()
@@ -244,7 +266,7 @@ fun LauncherRoot(
             .background(PureBlack)
             .pointerInput(Unit) {
                 detectVerticalDragGestures { _, dragAmount ->
-                    if (!isDrawerOpen && !isScratchpadOpen && !isQuestBoardOpen && !isWallpaperPickerOpen && !isOnboardingOpen && !isSettingsOpen) {
+                    if (!isBlackoutMode && !isDrawerOpen && !isScratchpadOpen && !isQuestBoardOpen && !isWallpaperPickerOpen && !isOnboardingOpen && !isSettingsOpen) {
                         // Downward drag triggers Working Memory Scratchpad
                         if (dragAmount > 35) {
                             view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
@@ -271,6 +293,7 @@ fun LauncherRoot(
             isSettingsOpen -> {
                 SettingsSheet(
                     keystoreManager = keystoreManager,
+                    quarantineRepository = quarantineRepository,
                     onOpenOnboarding = {
                         isSettingsOpen = false
                         isOnboardingOpen = true
@@ -337,6 +360,8 @@ fun LauncherRoot(
                 val activeCount = remember(tasks) { tasks.count { !it.isCompleted } }
 
                 LauncherHomeScreen(
+                    apps = apps,
+                    quarantineRepository = quarantineRepository,
                     isLowSpoonMode = isLowSpoonMode,
                     currentNoise = currentNoise,
                     isDefaultLauncher = isDefault,
@@ -345,7 +370,9 @@ fun LauncherRoot(
                     onToggleNoise = {
                         val next = when (currentNoise) {
                             null -> NoiseType.RAIN
-                            NoiseType.RAIN -> NoiseType.BROWN
+                            NoiseType.RAIN -> NoiseType.BINAURAL_GAMMA
+                            NoiseType.BINAURAL_GAMMA -> NoiseType.BINAURAL_BETA
+                            NoiseType.BINAURAL_BETA -> NoiseType.BROWN
                             NoiseType.BROWN -> NoiseType.PINK
                             NoiseType.PINK -> NoiseType.WHITE
                             NoiseType.WHITE -> null
@@ -357,6 +384,7 @@ fun LauncherRoot(
                             soundScapeEngine.start(coroutineScope, next)
                         }
                     },
+                    onTriggerBlackout = { isBlackoutMode = true },
                     onOpenDrawer = { isDrawerOpen = true },
                     onOpenScratchpad = { isScratchpadOpen = true },
                     onOpenQuestBoard = { isQuestBoardOpen = true },
@@ -364,6 +392,19 @@ fun LauncherRoot(
                     onOpenSettings = { isSettingsOpen = true },
                     onToggleLowSpoon = { isLowSpoonMode = !isLowSpoonMode },
                     onRequestDefaultLauncher = { requestDefaultLauncher(context) },
+                    onCreateTask = { title ->
+                        coroutineScope.launch {
+                            taskRepository.createTask(title, autoDecompose = false)
+                        }
+                    },
+                    onTriggerGoblinAI = { prompt ->
+                        coroutineScope.launch {
+                            taskRepository.createTask(prompt, autoDecompose = true)
+                        }
+                    },
+                    onLaunchApp = { app ->
+                        appRepository.launchApp(app)
+                    },
                     onCallClicked = onCallClicked,
                     onTextClicked = onTextClicked,
                     onNavigateClicked = onNavigateClicked
@@ -386,17 +427,25 @@ fun LauncherRoot(
                     .background(tintColor)
             )
         }
+
+        // Sensory Isolation Blackout Layer
+        if (isBlackoutMode) {
+            BlackoutOverlay(onDismiss = { isBlackoutMode = false })
+        }
     }
 }
 
 @Composable
 fun LauncherHomeScreen(
+    apps: List<AppInfo>,
+    quarantineRepository: QuarantineRepository,
     isLowSpoonMode: Boolean,
     currentNoise: NoiseType?,
     isDefaultLauncher: Boolean,
     activeTaskCount: Int,
     dailyAnchorRepository: DailyAnchorRepository,
     onToggleNoise: () -> Unit,
+    onTriggerBlackout: () -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenScratchpad: () -> Unit,
     onOpenQuestBoard: () -> Unit,
@@ -404,6 +453,9 @@ fun LauncherHomeScreen(
     onOpenSettings: () -> Unit,
     onToggleLowSpoon: () -> Unit,
     onRequestDefaultLauncher: () -> Unit,
+    onCreateTask: (String) -> Unit,
+    onTriggerGoblinAI: (String) -> Unit,
+    onLaunchApp: (AppInfo) -> Unit,
     onCallClicked: () -> Unit,
     onTextClicked: () -> Unit,
     onNavigateClicked: () -> Unit,
@@ -456,6 +508,26 @@ fun LauncherHomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Sensory Panic / Blackout Pill
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF1E1414), RoundedCornerShape(4.dp))
+                            .border(1.dp, Color(0xFF4A2424), RoundedCornerShape(4.dp))
+                            .clickable {
+                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                onTriggerBlackout()
+                            }
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "CALM",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFF9999),
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+
                     // Audio Ambient Pill
                     Box(
                         modifier = Modifier
@@ -550,7 +622,31 @@ fun LauncherHomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Notification Air-Gap Quarantine Card (renders only if notifications are quarantined)
+            QuarantineDigestCard(
+                quarantineRepository = quarantineRepository,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Omnibar: Instant indexed search, math (:calc), task creation (+), AI (?):
+            OmnibarWidget(
+                apps = apps,
+                onLaunchApp = onLaunchApp,
+                onCreateTask = onCreateTask,
+                onTriggerGoblinAI = onTriggerGoblinAI,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Daylight Progress Ruler (06:00 - 22:00)
+            DayProgressRuler(modifier = Modifier.fillMaxWidth())
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Daily Anchor — one-thing-today focus field
             DailyAnchorWidget(
@@ -839,3 +935,67 @@ private fun UtilityDockItem(
             .padding(horizontal = 12.dp, vertical = 10.dp)
     )
 }
+
+/**
+ * Fullscreen pure-black sensory reduction overlay.
+ * Hardware brightness is clamped to 0.01 and audio is silenced.
+ * Requires 3 intentional taps to exit, preventing accidental dismissal.
+ */
+@Composable
+fun BlackoutOverlay(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var tapCount by remember { mutableIntStateOf(0) }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(PureBlack)
+            .clickable {
+                tapCount++
+                if (tapCount >= 3) {
+                    onDismiss()
+                }
+            }
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .background(Color(0xFF333333), RoundedCornerShape(5.dp))
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "SENSORY ISOLATION ACTIVE",
+                color = Color(0xFF666666),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Hardware display minimized. Audio silenced.",
+                color = Color(0xFF444444),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = if (tapCount == 0) "[ TRIPLE-TAP TO RESTORE ]" else "[ TAP ${3 - tapCount} MORE TO RESTORE ]",
+                color = Color(0xFF555555),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+

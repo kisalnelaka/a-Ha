@@ -10,18 +10,21 @@ class SoundScapeEngineTest {
     @Test
     fun verifyAllNoiseTypesConfigured() {
         val types = NoiseType.values()
-        assertEquals(4, types.size)
+        assertEquals(6, types.size)
         assertTrue(types.contains(NoiseType.RAIN))
+        assertTrue(types.contains(NoiseType.BINAURAL_GAMMA))
+        assertTrue(types.contains(NoiseType.BINAURAL_BETA))
         assertTrue(types.contains(NoiseType.BROWN))
         assertTrue(types.contains(NoiseType.PINK))
         assertTrue(types.contains(NoiseType.WHITE))
     }
 
     @Test
-    fun verifyRainDisplayName() {
-        val rain = NoiseType.RAIN
-        assertNotNull(rain.displayName)
-        assertTrue(rain.displayName.contains("Rainfall"))
+    fun verifyDisplayNames() {
+        assertTrue(NoiseType.RAIN.displayName.contains("Rainfall"))
+        assertTrue(NoiseType.BINAURAL_GAMMA.displayName.contains("Gamma"))
+        assertTrue(NoiseType.BINAURAL_BETA.displayName.contains("Beta"))
+        assertTrue(NoiseType.BROWN.displayName.contains("Brown"))
     }
 
     @Test
