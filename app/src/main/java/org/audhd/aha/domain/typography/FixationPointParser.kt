@@ -16,8 +16,10 @@ import kotlin.math.ceil
  *
  * Architectural Invariants:
  * - Operates in single-pass O(N) time with O(1) auxiliary allocations during token scanning.
+ * - Leverages an internal synchronized LRU cache for short strings (<= 128 chars) to achieve 0 heap allocations
+ *   during fast 90Hz/120Hz scrolling of app drawer items and UI labels.
  * - Leverages [AnnotatedString.Builder.addStyle] over index ranges directly, avoiding intermediate substring
- *   allocations to eliminate GC pressure during 90Hz/120Hz app drawer scrolling.
+ *   allocations to eliminate GC pressure.
  * - Preserves all existing styles and annotations when parsing existing [AnnotatedString] instances.
  */
 object FixationPointParser {
@@ -26,6 +28,13 @@ object FixationPointParser {
      * Default fixation ratio targeting the first 40% of characters per word.
      */
     const val DEFAULT_FIXATION_RATIO: Float = 0.4f
+
+    private const val MAX_CACHE_SIZE = 256
+    private val lruCache = object : java.util.LinkedHashMap<String, AnnotatedString>(MAX_CACHE_SIZE, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, AnnotatedString>?): Boolean {
+            return size > MAX_CACHE_SIZE
+        }
+    }
 
     /**
      * Calculates the fixation anchor length for a given word length.
@@ -70,8 +79,15 @@ object FixationPointParser {
             return AnnotatedString("")
         }
 
+        val isDefaultConfig = fixationRatio == DEFAULT_FIXATION_RATIO && boldWeight == FontWeight.Bold && text.length <= 128
+        if (isDefaultConfig) {
+            synchronized(lruCache) {
+                lruCache[text]?.let { return it }
+            }
+        }
+
         val style = SpanStyle(fontWeight = boldWeight)
-        return buildAnnotatedString {
+        val result = buildAnnotatedString {
             append(text)
 
             var index = 0
@@ -105,6 +121,14 @@ object FixationPointParser {
                 }
             }
         }
+
+        if (isDefaultConfig) {
+            synchronized(lruCache) {
+                lruCache[text] = result
+            }
+        }
+
+        return result
     }
 
     /**

@@ -94,7 +94,8 @@ fun DeskWidget(
         val dateFormat = SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
 
         while (isActive) {
-            val now = Date()
+            val nowMillis = System.currentTimeMillis()
+            val now = Date(nowMillis)
             currentTimeString = timeFormat.format(now)
             currentDateString = dateFormat.format(now).uppercase()
 
@@ -103,7 +104,11 @@ fun DeskWidget(
                 pixelShiftY = Random.nextInt(-3, 4)
             }
 
-            delay(1000L)
+            // Power-efficiency optimization: Align wakeups to the exact minute boundary when idle,
+            // dropping CPU wakeups from 60/min to 1/min. Standby mode updates every 15s for jitter.
+            val millisUntilNextMinute = 60_000L - (nowMillis % 60_000L)
+            val sleepDuration = if (isDeskStandbyActive) 15_000L else millisUntilNextMinute.coerceIn(500L, 60_000L)
+            delay(sleepDuration)
         }
     }
 

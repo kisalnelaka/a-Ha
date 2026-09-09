@@ -13,5 +13,7 @@ data class WallpaperItem(
     val thumbnailUrl: String = "",
     val fullUrl: String = "",
     val isProcedural: Boolean = false,
-    val proceduralType: ProceduralWallpaperType? = null
+    val proceduralType: ProceduralWallpaperType? = null,
+    val isCustom: Boolean = false,
+    val localFilePath: String = ""
 )

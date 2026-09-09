@@ -15,7 +15,8 @@ data class AppInfo(
     val packageName: String,
     val activityName: String,
     val userHandle: UserHandle? = null,
-    val isDistractionApp: Boolean = false
+    val isDistractionApp: Boolean = false,
+    val searchIndex: String = (label + " " + packageName).lowercase()
 ) {
     val componentName: ComponentName
         get() = ComponentName(packageName, activityName)

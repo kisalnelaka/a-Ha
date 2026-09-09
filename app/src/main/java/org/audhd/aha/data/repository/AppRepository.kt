@@ -126,7 +126,7 @@ class AppRepository(private val context: Context? = null) {
         if (query.isBlank()) return sourceList
         val trimmed = query.trim().lowercase()
         return sourceList.filter { app ->
-            app.label.lowercase().contains(trimmed) || app.packageName.lowercase().contains(trimmed)
+            app.searchIndex.contains(trimmed)
         }
     }
 

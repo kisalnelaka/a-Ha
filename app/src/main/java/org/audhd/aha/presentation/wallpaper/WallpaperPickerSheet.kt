@@ -1,6 +1,9 @@
 package org.audhd.aha.presentation.wallpaper
 
+import android.net.Uri
 import android.view.HapticFeedbackConstants
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,11 +58,24 @@ fun WallpaperPickerSheet(
     var wallpapers by remember { mutableStateOf<List<WallpaperItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedWallpaper by remember { mutableStateOf<WallpaperItem?>(null) }
+    var pendingCustomUri by remember { mutableStateOf<Uri?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var isApplying by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    val photoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            pendingCustomUri = uri
+        }
+    }
+
+    suspend fun reloadWallpapers() {
         wallpapers = wallpaperRepository.getAvailableWallpapers()
+    }
+
+    LaunchedEffect(Unit) {
+        reloadWallpapers()
         isLoading = false
     }
 
@@ -74,20 +90,20 @@ fun WallpaperPickerSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 14.dp),
+                    .padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
                     Text(
-                        text = "Dark Wallpapers",
+                        text = "Wallpapers",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFE0E0E0),
                         fontFamily = FontFamily.Monospace
                     )
                     Text(
-                        text = "AMOLED • Procedural • Wallhaven Minimal",
+                        text = "Custom Photos • Offline Presets • Minimal",
                         fontSize = 11.sp,
                         color = Color(0xFF777777),
                         fontFamily = FontFamily.Monospace
@@ -108,6 +124,30 @@ fun WallpaperPickerSheet(
                 ) {
                     Text("Close", fontSize = 11.sp, fontFamily = FontFamily.Monospace)
                 }
+            }
+
+            // Custom Wallpaper Action Button
+            Button(
+                onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    photoPicker.launch("image/*")
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF1E281E),
+                    contentColor = Color(0xFF88D888)
+                ),
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+                    .border(1.dp, Color(0xFF2E4E2E), RoundedCornerShape(4.dp))
+            ) {
+                Text(
+                    text = "[ + CHOOSE FROM GALLERY / STORAGE ]",
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             if (statusMessage != null) {
@@ -143,14 +183,155 @@ fun WallpaperPickerSheet(
                             onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                 selectedWallpaper = item
-                            }
+                            },
+                            onDelete = if (item.isCustom) {
+                                {
+                                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                    val deleted = wallpaperRepository.deleteCustomWallpaper(item)
+                                    if (deleted) {
+                                        statusMessage = "Custom wallpaper deleted."
+                                        coroutineScope.launch { reloadWallpapers() }
+                                    }
+                                }
+                            } else null
                         )
                     }
                 }
             }
         }
 
-        // Apply Confirmation Dialog
+        // Custom Photo Target Dialog
+        pendingCustomUri?.let { uri ->
+            Dialog(onDismissRequest = { if (!isApplying) pendingCustomUri = null }) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFF161616),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2E2E2E)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "Import Custom Wallpaper",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFEEEEEE),
+                            fontFamily = FontFamily.Monospace
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Downsampled & optimized for memory safety. Select destination:",
+                            fontSize = 11.sp,
+                            color = Color(0xFF888888),
+                            fontFamily = FontFamily.Monospace
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        if (isApplying) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                CircularProgressIndicator(color = Color(0xFF888888), strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Saving & applying wallpaper...",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFCCCCCC),
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        isApplying = true
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        coroutineScope.launch {
+                                            val ok = wallpaperRepository.importAndApplyCustomWallpaper(uri, WallpaperTarget.HOME)
+                                            statusMessage = if (ok) "Custom wallpaper applied to Home." else "Failed to apply."
+                                            reloadWallpapers()
+                                            isApplying = false
+                                            pendingCustomUri = null
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF242424),
+                                        contentColor = Color(0xFFE0E0E0)
+                                    ),
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Apply to Home Screen", fontFamily = FontFamily.Monospace)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        isApplying = true
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        coroutineScope.launch {
+                                            val ok = wallpaperRepository.importAndApplyCustomWallpaper(uri, WallpaperTarget.LOCK)
+                                            statusMessage = if (ok) "Custom wallpaper applied to Lock." else "Failed to apply."
+                                            reloadWallpapers()
+                                            isApplying = false
+                                            pendingCustomUri = null
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF242424),
+                                        contentColor = Color(0xFFE0E0E0)
+                                    ),
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Apply to Lock Screen", fontFamily = FontFamily.Monospace)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        isApplying = true
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        coroutineScope.launch {
+                                            val ok = wallpaperRepository.importAndApplyCustomWallpaper(uri, WallpaperTarget.BOTH)
+                                            statusMessage = if (ok) "Custom wallpaper applied to Both." else "Failed to apply."
+                                            reloadWallpapers()
+                                            isApplying = false
+                                            pendingCustomUri = null
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF333333),
+                                        contentColor = Color(0xFFFFFFFF)
+                                    ),
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Apply to Both", fontFamily = FontFamily.Monospace)
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Button(
+                                    onClick = { pendingCustomUri = null },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = Color(0xFF777777)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Cancel", fontFamily = FontFamily.Monospace)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply Confirmation Dialog for presets / online wallpapers
         selectedWallpaper?.let { wallpaper ->
             Dialog(onDismissRequest = { if (!isApplying) selectedWallpaper = null }) {
                 Surface(
@@ -171,7 +352,11 @@ fun WallpaperPickerSheet(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = if (wallpaper.isProcedural) "Offline AMOLED Generated (0ms, 0 net)" else "Curated Minimal Dark Stream",
+                            text = when {
+                                wallpaper.isCustom -> "Imported Local Custom Photo"
+                                wallpaper.isProcedural -> "Offline AMOLED Generated (0ms, 0 net)"
+                                else -> "Curated Minimal Dark Stream"
+                            },
                             fontSize = 12.sp,
                             color = Color(0xFF888888),
                             fontFamily = FontFamily.Monospace
@@ -287,19 +472,24 @@ fun WallpaperPickerSheet(
 fun WallpaperCard(
     item: WallpaperItem,
     onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(Color(0xFF111111), RoundedCornerShape(6.dp))
-            .border(1.dp, Color(0xFF222222), RoundedCornerShape(6.dp))
+            .border(
+                1.dp,
+                if (item.isCustom) Color(0xFF2E4E2E) else Color(0xFF222222),
+                RoundedCornerShape(6.dp)
+            )
             .clickable(onClick = onClick)
             .padding(14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = FixationPointParser.parse(item.title),
                 fontSize = 14.sp,
@@ -308,18 +498,40 @@ fun WallpaperCard(
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
-                text = if (item.isProcedural) "Offline Preset" else "Wallhaven Minimal",
+                text = when {
+                    item.isCustom -> "Custom Saved Photo"
+                    item.isProcedural -> "Offline Preset"
+                    else -> "Wallhaven Minimal"
+                },
                 fontSize = 11.sp,
-                color = if (item.isProcedural) Color(0xFF88AA88) else Color(0xFF777777),
+                color = when {
+                    item.isCustom -> Color(0xFF88D888)
+                    item.isProcedural -> Color(0xFF88AA88)
+                    else -> Color(0xFF777777)
+                },
                 fontFamily = FontFamily.Monospace
             )
         }
 
-        Text(
-            text = "Set →",
-            fontSize = 12.sp,
-            color = Color(0xFF888888),
-            fontFamily = FontFamily.Monospace
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onDelete != null) {
+                Text(
+                    text = "[ Del ]",
+                    fontSize = 11.sp,
+                    color = Color(0xFFD88888),
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier
+                        .clickable(onClick = onDelete)
+                        .padding(end = 12.dp)
+                )
+            }
+
+            Text(
+                text = "Set →",
+                fontSize = 12.sp,
+                color = Color(0xFF888888),
+                fontFamily = FontFamily.Monospace
+            )
+        }
     }
 }
