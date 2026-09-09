@@ -10,11 +10,6 @@
     <!-- Android 13+ runtime notification dispatch -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Focus tracking and time-blindness guardrails -->
-    <uses-permission
-        android:name="android.permission.PACKAGE_USAGE_STATS"
-        tools:ignore="ProtectedPermissions" />
-
     <!-- AudioTrack ambient noise generation and audio routing -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
@@ -74,17 +69,6 @@
             <meta-data
                 android:name="android.service.dream"
                 android:resource="@xml/desk_mode_dream" />
-        </service>
-
-        <!-- Sensory Regulation & Calm Notification Batching Service -->
-        <service
-            android:name=".service.NotificationBatchService"
-            android:exported="true"
-            android:label="a-Ha Notification Batching"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
         </service>
 
     </application>
