@@ -49,6 +49,7 @@ import org.audhd.aha.data.model.AppInfo
 import org.audhd.aha.data.repository.AppRepository
 import org.audhd.aha.data.repository.ScratchpadRepository
 import org.audhd.aha.data.repository.TaskRepository
+import org.audhd.aha.data.repository.WallpaperRepository
 import org.audhd.aha.data.security.KeystoreManager
 import org.audhd.aha.domain.audio.NoiseType
 import org.audhd.aha.domain.audio.SoundScapeEngine
@@ -65,6 +66,7 @@ import org.audhd.aha.presentation.theme.PureBlack
 import org.audhd.aha.presentation.theme.TextMuted
 import org.audhd.aha.presentation.theme.TextPrimary
 import org.audhd.aha.presentation.theme.TextSecondary
+import org.audhd.aha.presentation.wallpaper.WallpaperPickerSheet
 
 /**
  * Root Launcher Activity orchestrating the AuDHD executive functioning interface.
@@ -74,6 +76,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var appRepository: AppRepository
     private lateinit var scratchpadRepository: ScratchpadRepository
     private lateinit var taskRepository: TaskRepository
+    private lateinit var wallpaperRepository: WallpaperRepository
     private lateinit var soundScapeEngine: SoundScapeEngine
     private lateinit var screenTimeTintController: ScreenTimeTintController
 
@@ -87,6 +90,7 @@ class MainActivity : ComponentActivity() {
         appRepository = AppRepository(applicationContext)
         scratchpadRepository = ScratchpadRepository(applicationContext)
         taskRepository = TaskRepository(appDatabase.taskDao(), decomposerEngine)
+        wallpaperRepository = WallpaperRepository(applicationContext)
         soundScapeEngine = SoundScapeEngine()
         screenTimeTintController = ScreenTimeTintController(applicationContext)
 
@@ -100,6 +104,7 @@ class MainActivity : ComponentActivity() {
                         appRepository = appRepository,
                         scratchpadRepository = scratchpadRepository,
                         taskRepository = taskRepository,
+                        wallpaperRepository = wallpaperRepository,
                         soundScapeEngine = soundScapeEngine,
                         screenTimeTintController = screenTimeTintController,
                         onCallClicked = ::launchDialer,
@@ -110,6 +115,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
@@ -144,6 +150,7 @@ fun LauncherRoot(
     appRepository: AppRepository,
     scratchpadRepository: ScratchpadRepository,
     taskRepository: TaskRepository,
+    wallpaperRepository: WallpaperRepository,
     soundScapeEngine: SoundScapeEngine,
     screenTimeTintController: ScreenTimeTintController,
     onCallClicked: () -> Unit,
@@ -158,6 +165,7 @@ fun LauncherRoot(
     var isDrawerOpen by remember { mutableStateOf(false) }
     var isScratchpadOpen by remember { mutableStateOf(false) }
     var isQuestBoardOpen by remember { mutableStateOf(false) }
+    var isWallpaperPickerOpen by remember { mutableStateOf(false) }
     var isOnboardingOpen by remember { mutableStateOf(false) }
     var isLowSpoonMode by remember { mutableStateOf(false) }
     var currentNoise by remember { mutableStateOf<NoiseType?>(null) }
@@ -173,9 +181,10 @@ fun LauncherRoot(
         appRepository.refreshApps()
     }
 
-    BackHandler(enabled = isDrawerOpen || isScratchpadOpen || isQuestBoardOpen || isOnboardingOpen) {
+    BackHandler(enabled = isDrawerOpen || isScratchpadOpen || isQuestBoardOpen || isWallpaperPickerOpen || isOnboardingOpen) {
         when {
             isOnboardingOpen -> isOnboardingOpen = false
+            isWallpaperPickerOpen -> isWallpaperPickerOpen = false
             isQuestBoardOpen -> isQuestBoardOpen = false
             isScratchpadOpen -> isScratchpadOpen = false
             isDrawerOpen -> {
@@ -191,7 +200,7 @@ fun LauncherRoot(
             .background(PureBlack)
             .pointerInput(Unit) {
                 detectVerticalDragGestures { _, dragAmount ->
-                    if (!isDrawerOpen && !isScratchpadOpen && !isQuestBoardOpen && !isOnboardingOpen) {
+                    if (!isDrawerOpen && !isScratchpadOpen && !isQuestBoardOpen && !isWallpaperPickerOpen && !isOnboardingOpen) {
                         // Downward drag triggers Working Memory Scratchpad
                         if (dragAmount > 35) {
                             view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
@@ -228,6 +237,12 @@ fun LauncherRoot(
                         }
                     },
                     onDismiss = { isQuestBoardOpen = false }
+                )
+            }
+            isWallpaperPickerOpen -> {
+                WallpaperPickerSheet(
+                    wallpaperRepository = wallpaperRepository,
+                    onDismiss = { isWallpaperPickerOpen = false }
                 )
             }
             isDrawerOpen -> {
@@ -274,6 +289,7 @@ fun LauncherRoot(
                     onOpenDrawer = { isDrawerOpen = true },
                     onOpenScratchpad = { isScratchpadOpen = true },
                     onOpenQuestBoard = { isQuestBoardOpen = true },
+                    onOpenWallpaperPicker = { isWallpaperPickerOpen = true },
                     onOpenOnboarding = { isOnboardingOpen = true },
                     onToggleLowSpoon = { isLowSpoonMode = !isLowSpoonMode },
                     onCallClicked = onCallClicked,
@@ -282,6 +298,7 @@ fun LauncherRoot(
                 )
             }
         }
+
 
         if (isScratchpadOpen) {
             ScratchpadDialog(
@@ -309,6 +326,7 @@ fun LauncherHomeScreen(
     onOpenDrawer: () -> Unit,
     onOpenScratchpad: () -> Unit,
     onOpenQuestBoard: () -> Unit,
+    onOpenWallpaperPicker: () -> Unit,
     onOpenOnboarding: () -> Unit,
     onToggleLowSpoon: () -> Unit,
     onCallClicked: () -> Unit,
@@ -417,6 +435,14 @@ fun LauncherHomeScreen(
                         .padding(vertical = 6.dp, horizontal = 8.dp)
                 )
                 Text(
+                    text = "Wallpapers".toFixationPoint(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary,
+                    modifier = Modifier
+                        .clickable(onClick = onOpenWallpaperPicker)
+                        .padding(vertical = 6.dp, horizontal = 8.dp)
+                )
+                Text(
                     text = "Principles / Guide".toFixationPoint(),
                     style = MaterialTheme.typography.labelMedium,
                     color = TextMuted,
@@ -426,6 +452,7 @@ fun LauncherHomeScreen(
                 )
             }
         }
+
 
 
         // Bottom Section: The Monochromatic Utility Bar

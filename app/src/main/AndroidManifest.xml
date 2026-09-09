@@ -24,6 +24,10 @@
     <!-- Tactile haptic feedback for executive function pacing -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Setting dopamine-neutral dark wallpapers -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
