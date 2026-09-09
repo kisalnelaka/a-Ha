@@ -1,5 +1,6 @@
 package org.audhd.aha.presentation
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -162,11 +164,15 @@ fun LauncherRoot(
     val apps by appRepository.installedApps.collectAsState()
     val tasks by taskRepository.getActiveTasks().collectAsState(initial = emptyList())
 
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("aha_prefs", Context.MODE_PRIVATE) }
+    val hasCompletedOnboarding = remember { prefs.getBoolean("has_completed_onboarding", false) }
+
     var isDrawerOpen by remember { mutableStateOf(false) }
     var isScratchpadOpen by remember { mutableStateOf(false) }
     var isQuestBoardOpen by remember { mutableStateOf(false) }
     var isWallpaperPickerOpen by remember { mutableStateOf(false) }
-    var isOnboardingOpen by remember { mutableStateOf(false) }
+    var isOnboardingOpen by remember { mutableStateOf(!hasCompletedOnboarding) }
     var isLowSpoonMode by remember { mutableStateOf(false) }
     var currentNoise by remember { mutableStateOf<NoiseType?>(null) }
     var searchQuery by remember { mutableStateOf("") }
@@ -183,7 +189,10 @@ fun LauncherRoot(
 
     BackHandler(enabled = isDrawerOpen || isScratchpadOpen || isQuestBoardOpen || isWallpaperPickerOpen || isOnboardingOpen) {
         when {
-            isOnboardingOpen -> isOnboardingOpen = false
+            isOnboardingOpen -> {
+                prefs.edit().putBoolean("has_completed_onboarding", true).apply()
+                isOnboardingOpen = false
+            }
             isWallpaperPickerOpen -> isWallpaperPickerOpen = false
             isQuestBoardOpen -> isQuestBoardOpen = false
             isScratchpadOpen -> isScratchpadOpen = false
@@ -218,7 +227,10 @@ fun LauncherRoot(
         when {
             isOnboardingOpen -> {
                 OnboardingScreen(
-                    onComplete = { isOnboardingOpen = false }
+                    onComplete = {
+                        prefs.edit().putBoolean("has_completed_onboarding", true).apply()
+                        isOnboardingOpen = false
+                    }
                 )
             }
             isQuestBoardOpen -> {
